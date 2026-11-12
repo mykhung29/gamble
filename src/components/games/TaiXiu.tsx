@@ -128,20 +128,23 @@ function SideTile({
 
 export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChange, onNoMoney }: GameProps<TxRecord>) {
   const [bets, setBets] = useState<TxBets>(emptyTxBets)
-  const [lastBets, setLastBets] = useState<TxBets | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
   const [dice, setDice] = useState<TxDice | null>(null)
   const [roundId, setRoundId] = useState(0)
   const [result, setResult] = useState<TxResult | null>(null)
   const [editing, setEditing] = useState<TxSide | null>(null)
-  const timer = useRef<number | undefined>(undefined)
   const revealing = useRef(false)
 
   const totalBet = sumTx(bets)
   const betting = phase === 'betting'
   const revealed = phase === 'revealed'
   useReportActive(betting && totalBet > 0, onActiveChange)
-  useEffect(() => () => window.clearTimeout(timer.current), [])
+  /** Lắc xong -> mở cược. Đặt trong effect để StrictMode/unmount không làm kẹt ở 'shaking' */
+  useEffect(() => {
+    if (phase !== 'shaking') return
+    const t = window.setTimeout(() => setPhase('betting'), SHAKE_MS)
+    return () => window.clearTimeout(t)
+  }, [phase])
   useEffect(() => {
     if (!revealed) revealing.current = false
   }, [revealed])
@@ -154,7 +157,6 @@ export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChan
     setRoundId((r) => r + 1)
     setPhase('shaking')
     sfx.shake(SHAKE_MS)
-    timer.current = window.setTimeout(() => setPhase('betting'), SHAKE_MS)
   }
 
   const openBet = (side: TxSide) => {
@@ -181,15 +183,6 @@ export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChan
     sfx.remove()
   }
 
-  const repeatBets = () => {
-    if (!betting || !lastBets || totalBet > 0) return
-    const need = sumTx(lastBets)
-    if (need > balance) return onNoMoney()
-    setBalance((b) => b - need)
-    setBets({ ...lastBets })
-    sfx.chip()
-  }
-
   /** Khui (tự động khi hết giờ) — lúc này mới gieo xúc xắc */
   const reveal = () => {
     if (!betting || revealing.current) return
@@ -198,7 +191,6 @@ export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChan
     const r = settleTx(bets, d)
     setEditing(null)
     setDice(d)
-    if (r.totalBet) setLastBets(bets)
     setResult(r)
     setPhase('revealed')
     if (r.payout) setBalance((b) => b + r.payout)
@@ -232,9 +224,10 @@ export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChan
     <div className="flex flex-col gap-4">
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,22rem)_1fr]">
         <section className="flex flex-col items-center gap-4 rounded-3xl border border-amber-400/20 bg-black/20 p-5">
-          <div className="relative py-3">
+          <div className="relative pt-6 pb-3">
             <Bowl
               phase={phase}
+              overlay={<RoundTimer phase={phase} left={left} />}
               hint={betting ? 'Đã lắc xong — mời đặt cược' : undefined}
               dice={[0, 1, 2].map((i) => (
                 <DieShell key={`${roundId}-${i}`} index={i} revealed>
@@ -259,7 +252,6 @@ export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChan
             </AnimatePresence>
           </div>
           <StatusBanner result={revealed && result ? { net: result.net, label: outcomeLabel, noBet: !result.totalBet } : null} text={STATUS[phase]} />
-          <RoundTimer phase={phase} left={left} />
         </section>
 
         <section className="flex flex-col gap-4">
@@ -282,9 +274,6 @@ export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChan
             <div className="flex flex-wrap gap-2">
               <Button variant="ghost" className="text-sm" disabled={!betting || !totalBet} onClick={clearBets}>
                 ✖ Xoá cược
-              </Button>
-              <Button variant="ghost" className="text-sm" disabled={!betting || !lastBets || totalBet > 0} onClick={repeatBets}>
-                ↺ Cược như ván trước
               </Button>
             </div>
           </div>

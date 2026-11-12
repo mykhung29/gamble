@@ -22,7 +22,7 @@ export const SHAKE_MS = 1400
 export const TX_BAO_PAYOUT = 30
 
 /** Bầu Cua & Tài Xỉu: thời gian đặt cược sau khi lắc (giây), hết giờ tự khui */
-export const BET_SECONDS = 45
+export const BET_SECONDS = 30
 
 /** Khui xong chờ bao lâu thì tự lắc ván mới (giây) */
-export const NEXT_ROUND_SECONDS = 5
+export const NEXT_ROUND_SECONDS = 12

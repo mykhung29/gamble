@@ -1,7 +1,7 @@
 import { motion } from 'motion/react'
 import type { ReactNode } from 'react'
 import { fmt } from '../format'
-import { SymbolIcon } from '../game/symbols'
+import { SYMBOL_MAP } from '../game/symbols'
 import { PipFace } from './games/TaiXiu'
 
 export type GameId = 'baucua' | 'taixiu' | 'baicao'
@@ -10,7 +10,7 @@ export const GAME_NAMES: Record<GameId, string> = { baucua: 'Bầu Cua', taixiu:
 
 function MiniDie({ children, rotate }: { children: ReactNode; rotate: number }) {
   return (
-    <div className="grid size-14 place-items-center rounded-xl border-2 border-stone-300 bg-gradient-to-br from-white to-stone-200 shadow-lg" style={{ rotate: `${rotate}deg` }}>
+    <div className="grid size-14 place-items-center overflow-hidden rounded-xl border-2 border-stone-300 bg-gradient-to-br from-white to-stone-200 shadow-lg" style={{ rotate: `${rotate}deg` }}>
       {children}
     </div>
   )
@@ -35,13 +35,13 @@ const ART: Record<GameId, ReactNode> = {
   baucua: (
     <div className="flex gap-2">
       <MiniDie rotate={-10}>
-        <SymbolIcon id="cua" size={36} />
+        <img src={SYMBOL_MAP.cua.img} alt="" draggable={false} className="size-full object-cover" />
       </MiniDie>
       <MiniDie rotate={4}>
-        <SymbolIcon id="bau" size={36} />
+        <img src={SYMBOL_MAP.bau.img} alt="" draggable={false} className="size-full object-cover" />
       </MiniDie>
       <MiniDie rotate={-3}>
-        <SymbolIcon id="tom" size={36} />
+        <img src={SYMBOL_MAP.tom.img} alt="" draggable={false} className="size-full object-cover" />
       </MiniDie>
     </div>
   ),

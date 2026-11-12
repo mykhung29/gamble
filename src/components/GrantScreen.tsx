@@ -58,7 +58,7 @@ export function GrantScreen({
         </Button>
         {onSkip && (
           <Button type="button" variant="ghost" className="w-full" onClick={onSkip}>
-            Bỏ qua, chơi tiếp với {fmt(balance)} điểm
+            ← Quay lại, không nạp
           </Button>
         )}
       </form>

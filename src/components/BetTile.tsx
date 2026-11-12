@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { fmt } from '../format'
 import type { SymbolInfo } from '../game/symbols'
-import { SymbolIcon } from '../game/symbols'
 
 export function BetTile({
   sym,
@@ -36,16 +35,15 @@ export function BetTile({
       whileTap={locked ? undefined : { scale: 0.96 }}
       animate={won ? { scale: [1, 1.08, 1] } : { scale: 1 }}
       transition={won ? { duration: 0.5, repeat: 2 } : undefined}
-      className={`relative aspect-[5/4] overflow-hidden rounded-2xl border-4 bg-gradient-to-br shadow-xl transition-[filter,opacity,box-shadow] ${sym.tile} ${
+      className={`relative aspect-[10/9] overflow-hidden rounded-xl border-2 bg-black sm:rounded-2xl sm:border-4 shadow-xl transition-[filter,opacity,box-shadow] ${
         won ? 'z-10 border-yellow-300 shadow-[0_0_35px_rgba(250,204,21,.75)]' : 'border-amber-200/30'
       } ${lost ? 'opacity-45 grayscale-[.7]' : ''} ${locked ? 'cursor-default' : 'cursor-pointer'}`}
       aria-label={`Đặt cược ${sym.name}`}
     >
-      <div className="pattern absolute inset-0 opacity-60" />
-      <div className="relative flex h-full flex-col items-center justify-center gap-0.5">
-        <SymbolIcon id={sym.id} size={56} />
-        <span className="font-display text-xl text-amber-50 drop-shadow sm:text-2xl">{sym.name}</span>
-      </div>
+      <img src={sym.img} alt="" draggable={false} className="absolute inset-0 size-full object-cover" />
+      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent pt-3 pb-0.5 text-center font-display text-base text-amber-50 drop-shadow sm:text-xl">
+        {sym.name}
+      </span>
 
       {won && (
         <motion.div
@@ -64,7 +62,7 @@ export function BetTile({
             initial={{ scale: 1.5, y: -6 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0, opacity: 0 }}
-            className="absolute right-2 bottom-2 flex items-center gap-1 rounded-full border-2 border-amber-200 bg-zinc-900/85 py-0.5 pr-2.5 pl-1 text-sm font-extrabold text-amber-300 shadow-lg"
+            className="absolute top-2 right-2 flex items-center gap-1 rounded-full border-2 border-amber-200 bg-zinc-900/85 py-0.5 pr-2.5 pl-1 text-sm font-extrabold text-amber-300 shadow-lg"
           >
             <span className="size-4 rounded-full border-2 border-dashed border-amber-300 bg-red-600" />
             {fmt(amount)}

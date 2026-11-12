@@ -54,11 +54,11 @@ export function LoginScreen({ onSuccess, onBack }: { onSuccess: () => void; onBa
         </div>
         <p className="h-5 text-sm font-semibold text-red-300">{error}</p>
         <Button type="submit" className="w-full py-3 text-lg" disabled={!pw}>
-          Vào sòng
+          Tiếp tục nạp điểm
         </Button>
         {onBack && (
           <Button type="button" variant="ghost" className="w-full" onClick={onBack}>
-            ← Quay lại bàn chơi
+            ← Quay lại
           </Button>
         )}
         <button

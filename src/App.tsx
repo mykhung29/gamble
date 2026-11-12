@@ -9,9 +9,8 @@ type Screen = 'login' | 'grant' | 'game'
 
 export default function App() {
   const [save, setSave] = useState<SaveData>(loadSave)
-  const [screen, setScreen] = useState<Screen>('login')
-  /** true = đã vào bàn trong phiên này (cho phép quay lại bàn từ màn mật khẩu) */
-  const [inSession, setInSession] = useState(false)
+  /** Mở web là vào menu game luôn; chỉ khi bấm Nạp điểm mới hỏi mật khẩu */
+  const [screen, setScreen] = useState<Screen>('game')
 
   useEffect(() => persist(save), [save])
 
@@ -21,15 +20,12 @@ export default function App() {
     [],
   )
 
-  const enterGame = () => {
-    setInSession(true)
-    setScreen('game')
-  }
+  const enterGame = () => setScreen('game')
 
   return (
     <AnimatePresence mode="wait">
       {screen === 'login' && (
-        <LoginScreen key="login" onSuccess={() => setScreen('grant')} onBack={inSession && save.balance > 0 ? () => setScreen('game') : undefined} />
+        <LoginScreen key="login" onSuccess={() => setScreen('grant')} onBack={enterGame} />
       )}
       {screen === 'grant' && (
         <GrantScreen
@@ -39,7 +35,7 @@ export default function App() {
             setBalance((b) => b + n)
             enterGame()
           }}
-          onSkip={save.balance > 0 ? enterGame : undefined}
+          onSkip={enterGame}
         />
       )}
       {screen === 'game' && (
@@ -49,10 +45,6 @@ export default function App() {
           setBalance={setBalance}
           push={push}
           onTopUp={() => setScreen('login')}
-          onLogout={() => {
-            setInSession(false)
-            setScreen('login')
-          }}
           onReset={() => setSave(emptySave())}
         />
       )}

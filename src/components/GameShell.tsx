@@ -20,11 +20,10 @@ interface Props {
   setBalance: (fn: (b: number) => number) => void
   push: <K extends HistoryKey>(key: K, r: SaveData[K][number]) => void
   onTopUp: () => void
-  onLogout: () => void
   onReset: () => void
 }
 
-export function GameShell({ save, setBalance, push, onTopUp, onLogout, onReset }: Props) {
+export function GameShell({ save, setBalance, push, onTopUp, onReset }: Props) {
   /** null = đang ở menu chọn game */
   const [game, setGame] = useState<GameId | null>(null)
   const [active, setActive] = useState(false)
@@ -51,16 +50,16 @@ export function GameShell({ save, setBalance, push, onTopUp, onLogout, onReset }
   const common = { balance: save.balance, setBalance, onActiveChange: setActive, onNoMoney: warnNoMoney }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 py-4">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mx-auto flex min-h-screen max-w-6xl flex-col gap-2 px-2 py-2 sm:gap-4 sm:px-4 sm:py-4">
       {/* Header */}
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         <div className="flex items-center gap-3">
           {game && (
             <Button variant="ghost" className="px-3 text-sm" disabled={active} onClick={() => setGame(null)}>
               ← Menu
             </Button>
           )}
-          <h1 className="gold-text font-display text-4xl drop-shadow">{game ? GAME_NAMES[game] : 'Game Vui Vẻ'}</h1>
+          <h1 className="gold-text font-display text-2xl drop-shadow sm:text-4xl">{game ? GAME_NAMES[game] : 'Game Vui Vẻ'}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <motion.div
@@ -74,22 +73,24 @@ export function GameShell({ save, setBalance, push, onTopUp, onLogout, onReset }
               <AnimatedNumber value={save.balance} />
             </span>
           </motion.div>
-          <Button variant="ghost" className="px-3" onClick={() => setMuted((m) => !m)} aria-label="Bật/tắt âm thanh">
-            {muted ? '🔇' : '🔊'}
-          </Button>
-          <Button variant="gold" className="px-3 text-sm" disabled={active} onClick={onTopUp}>
-            + Nạp điểm
-          </Button>
-          <Button variant="red" className="px-3 text-sm" disabled={active} onClick={() => setAskReset(true)}>
-            ⟲ Reset điểm
-          </Button>
-          <Button variant="ghost" className="px-3 text-sm" disabled={active} onClick={onLogout}>
-            Thoát
-          </Button>
+          {/* Loa / nạp / reset: chỉ hiện ở menu chính */}
+          {game === null && (
+            <>
+              <Button variant="ghost" className="px-3" onClick={() => setMuted((m) => !m)} aria-label="Bật/tắt âm thanh">
+                {muted ? '🔇' : '🔊'}
+              </Button>
+              <Button variant="gold" className="px-3 text-sm" disabled={active} onClick={onTopUp}>
+                + Nạp điểm
+              </Button>
+              <Button variant="red" className="px-3 text-sm" disabled={active} onClick={() => setAskReset(true)}>
+                ⟲ Reset điểm
+              </Button>
+            </>
+          )}
         </div>
       </header>
 
-      {active && <p className="-mt-2 text-center text-xs text-amber-200/60">Đang trong ván — chơi xong ván mới về menu / nạp / reset / thoát được</p>}
+      {active && <p className="-mt-1 text-center text-xs text-amber-200/60">Đang trong ván — chơi xong ván mới về menu được</p>}
 
       <AnimatePresence mode="wait">
         <motion.div
@@ -140,9 +141,6 @@ export function GameShell({ save, setBalance, push, onTopUp, onLogout, onReset }
               <h2 className="gold-text mt-2 font-display text-3xl">Hết điểm rồi!</h2>
               <p className="mt-2 text-amber-100/80">Nhập mật khẩu để nạp thêm điểm và chơi tiếp.</p>
               <div className="mt-5 flex gap-2">
-                <Button variant="ghost" className="flex-1" onClick={onLogout}>
-                  Thoát
-                </Button>
                 <Button className="flex-1" onClick={onTopUp}>
                   + Nạp điểm
                 </Button>
