@@ -15,11 +15,11 @@ import {
   settleTx,
   sumTx,
   txOutcome,
+  txParity,
 } from '../../game/taixiu'
 import { BetDialog } from '../BetDialog'
 import { Bowl, DieShell, type Phase } from '../Bowl'
 import { Button } from '../Button'
-import { CoinRain } from '../CoinRain'
 import { RoundTimer } from '../RoundTimer'
 import { StatusBanner } from '../StatusBanner'
 import { type GameProps, useAutoRounds, useReportActive } from './shared'
@@ -27,13 +27,15 @@ import { type GameProps, useAutoRounds, useReportActive } from './shared'
 const STATUS: Record<Phase, string> = {
   idle: 'Chuẩn bị lắc...',
   shaking: 'Đang lắc...',
-  betting: 'Chọn Tài / Xỉu / Bão để đặt cược — hết giờ sẽ tự khui',
+  betting: 'Chọn Tài / Xỉu / Chẵn / Lẻ / Bão để đặt cược — hết giờ sẽ tự khui',
   revealed: '',
 }
 
 const SIDES: Record<TxSide, { title: string; sub: string; tile: string; text: string }> = {
   tai: { title: 'TÀI', sub: 'Tổng 11 – 17 · 1 ăn 1', tile: 'from-red-500 to-red-900', text: 'text-amber-50' },
   xiu: { title: 'XỈU', sub: 'Tổng 4 – 10 · 1 ăn 1', tile: 'from-slate-100 to-slate-400', text: 'text-slate-900' },
+  chan: { title: 'CHẴN', sub: 'Tổng chẵn · 1 ăn 1', tile: 'from-emerald-500 to-emerald-900', text: 'text-amber-50' },
+  le: { title: 'LẺ', sub: 'Tổng lẻ · 1 ăn 1', tile: 'from-indigo-500 to-indigo-900', text: 'text-amber-50' },
   bao: { title: 'BÃO', sub: `3 con giống nhau · 1 ăn ${TX_BAO_PAYOUT}`, tile: 'from-amber-400 to-orange-700', text: 'text-red-950' },
 }
 
@@ -203,7 +205,8 @@ export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChan
 
   const shown: TxDice = dice ?? [1, 1, 1]
   const outcome = dice ? txOutcome(dice) : null
-  const outcomeLabel = dice ? `${SIDES[txOutcome(dice)].title} ${diceSum(dice)}` : undefined
+  const parity = dice ? txParity(dice) : null
+  const outcomeLabel = dice ? `${SIDES[txOutcome(dice)].title}${parity ? ` ${SIDES[parity].title}` : ''} ${diceSum(dice)}` : undefined
   const tile = (side: TxSide, compact?: boolean) => (
     <SideTile
       side={side}
@@ -264,6 +267,10 @@ export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChan
               {tile('tai')}
               {tile('xiu')}
             </div>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {tile('chan', true)}
+              {tile('le', true)}
+            </div>
             {tile('bao', true)}
           </div>
 
@@ -277,7 +284,7 @@ export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChan
               </Button>
             </div>
           </div>
-          <p className="text-center text-xs text-amber-100/50">Ra bão thì cả Tài lẫn Xỉu đều thua</p>
+          <p className="text-center text-xs text-amber-100/50">Ra bão thì Tài, Xỉu, Chẵn, Lẻ đều thua</p>
         </section>
       </div>
 
@@ -288,7 +295,8 @@ export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChan
           {history.length > 0 && (
             <span className="normal-case">
               Tài {history.filter((h) => txOutcome(h.dice) === 'tai').length} · Xỉu {history.filter((h) => txOutcome(h.dice) === 'xiu').length} · Bão{' '}
-              {history.filter((h) => txOutcome(h.dice) === 'bao').length}
+              {history.filter((h) => txOutcome(h.dice) === 'bao').length} · Chẵn {history.filter((h) => txParity(h.dice) === 'chan').length} · Lẻ{' '}
+              {history.filter((h) => txParity(h.dice) === 'le').length}
             </span>
           )}
         </div>
@@ -330,8 +338,6 @@ export function TaiXiu({ balance, setBalance, history, pushHistory, onActiveChan
           />
         )}
       </AnimatePresence>
-
-      {revealed && result && result.net > 0 && <CoinRain key={roundId} count={Math.min(60, 15 + Math.floor((result.net / result.totalBet) * 10))} />}
     </div>
   )
 }

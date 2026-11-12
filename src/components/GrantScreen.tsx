@@ -30,7 +30,7 @@ export function GrantScreen({
           <div className="gold-text text-3xl font-extrabold">{fmt(balance)}</div>
         </div>
 
-        <label className="block text-sm font-semibold text-amber-100">💰 Nhập số điểm muốn cấp</label>
+        <label className="block text-sm font-semibold text-amber-100">Nhập số điểm muốn cấp</label>
         <input
           autoFocus
           inputMode="numeric"

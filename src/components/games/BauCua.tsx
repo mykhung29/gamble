@@ -9,7 +9,6 @@ import { BetDialog } from '../BetDialog'
 import { BetTile } from '../BetTile'
 import { Bowl, DieShell, type Phase } from '../Bowl'
 import { Button } from '../Button'
-import { CoinRain } from '../CoinRain'
 import { RoundTimer } from '../RoundTimer'
 import { StatusBanner } from '../StatusBanner'
 import { type GameProps, useAutoRounds, useReportActive } from './shared'
@@ -206,10 +205,6 @@ export function BauCua({ balance, setBalance, history, pushHistory, onActiveChan
           />
         )}
       </AnimatePresence>
-
-      {phase === 'revealed' && result && result.net > 0 && (
-        <CoinRain key={roundId} count={Math.min(60, 15 + Math.floor((result.net / result.totalBet) * 10))} />
-      )}
     </div>
   )
 }

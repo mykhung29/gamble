@@ -31,6 +31,8 @@ export function GameShell({ save, setBalance, push, onTopUp, onReset }: Props) {
   const [askReset, setAskReset] = useState(false)
   const [resetKey, setResetKey] = useState(0)
   const [noMoney, setNoMoney] = useState(0)
+  /** hết điểm mà bấm vào game -> hiện bảng mời nạp */
+  const [broke, setBroke] = useState(false)
 
   useEffect(() => sfx.setMuted(muted), [muted])
 
@@ -46,7 +48,6 @@ export function GameShell({ save, setBalance, push, onTopUp, onReset }: Props) {
     sfx.lose()
   }
 
-  const broke = save.balance === 0 && !active && !askReset
   const common = { balance: save.balance, setBalance, onActiveChange: setActive, onNoMoney: warnNoMoney }
 
   return (
@@ -68,7 +69,6 @@ export function GameShell({ save, setBalance, push, onTopUp, onReset }: Props) {
             transition={{ duration: 0.45 }}
             className="flex items-center gap-2 rounded-full border-2 border-amber-400/70 bg-red-950/70 px-4 py-1.5 shadow-inner"
           >
-            <span className="text-xl">💰</span>
             <span className="gold-text min-w-20 text-right text-xl font-extrabold tabular-nums">
               <AnimatedNumber value={save.balance} />
             </span>
@@ -103,6 +103,11 @@ export function GameShell({ save, setBalance, push, onTopUp, onReset }: Props) {
           {game === null && (
             <GameMenu
               onPick={(id) => {
+                if (save.balance <= 0) {
+                  sfx.error()
+                  setBroke(true)
+                  return
+                }
                 sfx.chip()
                 setGame(id)
               }}
@@ -137,10 +142,12 @@ export function GameShell({ save, setBalance, push, onTopUp, onReset }: Props) {
         {broke && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 grid place-items-center bg-black/70 px-4 backdrop-blur-sm">
             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="max-w-sm rounded-3xl border-2 border-amber-400/60 bg-red-950 p-6 text-center shadow-2xl">
-              <div className="text-6xl">💸</div>
-              <h2 className="gold-text mt-2 font-display text-3xl">Hết điểm rồi!</h2>
+              <h2 className="gold-text font-display text-3xl">Hết điểm rồi!</h2>
               <p className="mt-2 text-amber-100/80">Nhập mật khẩu để nạp thêm điểm và chơi tiếp.</p>
               <div className="mt-5 flex gap-2">
+                <Button variant="ghost" className="flex-1" onClick={() => setBroke(false)}>
+                  Đóng
+                </Button>
                 <Button className="flex-1" onClick={onTopUp}>
                   + Nạp điểm
                 </Button>

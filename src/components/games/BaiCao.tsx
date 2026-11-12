@@ -6,7 +6,6 @@ import { type BcRecord, type Card, type HandScore, compareHands, newDeck, scoreH
 import { sfx } from '../../game/sound'
 import { Button } from '../Button'
 import { Chip } from '../Chip'
-import { CoinRain } from '../CoinRain'
 import { CardSlot, PlayingCard } from '../PlayingCard'
 import { StatusBanner } from '../StatusBanner'
 import { type GameProps, useMainKey, useReportActive } from './shared'
@@ -312,8 +311,6 @@ export function BaiCao({ balance, setBalance, history, pushHistory, onActiveChan
           </div>
         )}
       </section>
-
-      {done && result.net > 0 && <CoinRain key={roundId} count={result.player.tier > 1 ? 50 : 25} />}
     </div>
   )
 }

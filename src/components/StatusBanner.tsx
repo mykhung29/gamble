@@ -39,7 +39,7 @@ export function StatusBanner({
             }`}
           >
             {result.label && <span className="mr-2 opacity-80">{result.label} ·</span>}
-            {result.net > 0 ? `🎉 Thắng +${fmt(result.net)}` : result.net < 0 ? `😢 Thua ${fmt(result.net)}` : '🤝 Hoà vốn'}
+            {result.net > 0 ? `Thắng +${fmt(result.net)}` : result.net < 0 ? `Thua ${fmt(result.net)}` : 'Hoà vốn'}
           </motion.div>
         ) : (
           <motion.p key={text} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-sm text-amber-100/80">
