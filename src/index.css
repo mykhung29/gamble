@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Lobster", "Be Vietnam Pro", cursive;
+}
+
+html, body, #root { min-height: 100%; }
+
+body {
+  margin: 0;
+  color: #fff7e6;
+  background:
+    radial-gradient(circle at 50% -10%, #b91c1c 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, #7c2d12 0%, transparent 50%),
+    #3b0a0a;
+  background-attachment: fixed;
+  -webkit-tap-highlight-color: transparent;
+  /* chừa tai thỏ / thanh home trên iPhone */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  user-select: none;
+}
+
+.gold-text {
+  background: linear-gradient(180deg, #fff3b0 0%, #facc15 45%, #b45309 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pattern {
+  background-image: radial-gradient(rgba(250, 204, 21, 0.12) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Lật bài 3D */
+.perspective { perspective: 900px; }
+.preserve-3d { transform-style: preserve-3d; }
+.backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.flip-y { transform: rotateY(180deg); }
+.card-back {
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.12) 0 6px, transparent 6px 12px),
+    radial-gradient(circle at 50% 50%, #dc2626, #7f1d1d);
+}
+.felt {
+  background: radial-gradient(ellipse at 50% 40%, #15803d 0%, #14532d 70%, #052e16 100%);
+}

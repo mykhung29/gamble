@@ -1,0 +1,1 @@
+tui muốn code 1 cái game, mới vào thì nhập mật khẩu bí mật, sau đó cấp điểm cho user, sao đó user chơi, game tui mún demo trước là bầu cua

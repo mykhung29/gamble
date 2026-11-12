@@ -1,0 +1,16 @@
+node_modules
+dist
+
+# --- App Android: không đưa lên repo ---
+android/
+capacitor.config.ts
+scripts/
+*.apk
+*.aab
+# Khoá ký app — TUYỆT ĐỐI không push
+keystore/
+*.jks
+*.keystore
+
+# Ảnh không thuộc dự án
+images.jpg
