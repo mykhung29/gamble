@@ -63,10 +63,10 @@ const ART: Record<GameId, ReactNode> = {
   ),
 }
 
-const INFO: Record<GameId, { desc: string; bg: string }> = {
-  baucua: { desc: 'Lắc 3 xúc xắc 6 con vật · ra mấy con ăn mấy lần', bg: 'from-red-600 via-red-800 to-red-950' },
-  taixiu: { desc: 'Đoán tổng 3 xúc xắc · Tài 11–17 / Xỉu 4–10', bg: 'from-slate-600 via-slate-800 to-zinc-950' },
-  baicao: { desc: 'Đấu 3 lá với nhà cái · Sáp > Ba Tây > 9 nút', bg: 'from-emerald-600 via-green-800 to-emerald-950' },
+const INFO: Record<GameId, { bg: string }> = {
+  baucua: { bg: 'from-red-600 via-red-800 to-red-950' },
+  taixiu: { bg: 'from-slate-600 via-slate-800 to-zinc-950' },
+  baicao: { bg: 'from-emerald-600 via-green-800 to-emerald-950' },
 }
 
 export function GameMenu({ onPick, played }: { onPick: (id: GameId) => void; played: Record<GameId, { rounds: number; net: number }> }) {
@@ -101,7 +101,6 @@ export function GameMenu({ onPick, played }: { onPick: (id: GameId) => void; pla
               <div className="pattern absolute inset-0 opacity-50" />
               <div className="relative grid h-28 place-items-center transition-transform group-hover:scale-110">{ART[id]}</div>
               <div className="relative font-display text-4xl text-amber-50 drop-shadow">{GAME_NAMES[id]}</div>
-              <p className="relative text-sm text-amber-100/80">{INFO[id].desc}</p>
               <div className="relative text-xs text-amber-200/60">
                 {p.rounds > 0 ? (
                   <>
