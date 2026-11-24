@@ -45,3 +45,12 @@ export const CUP_PAYOUT = 1.8
 /** Đoán Ly: số lần tráo ly mỗi ván, và thời gian mỗi lần tráo (ms) — càng nhiều/càng nhanh càng khó theo dõi */
 export const CUP_SWAPS = 22
 export const CUP_SWAP_MS = 90
+
+/**
+ * Đua Ngựa: tỷ lệ hoàn trả. Kèo mỗi ngựa = HR_RTP / xác suất thắng − 1
+ * (0.92 nghĩa là về lâu dài người chơi nhận lại ~92% tiền cược)
+ */
+export const HR_RTP = 0.92
+
+/** Đua Ngựa: thời gian con về nhất chạy hết đường đua (ms) */
+export const HR_RACE_MS = 7500

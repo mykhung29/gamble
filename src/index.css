@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* short: màn thấp (điện thoại nằm ngang), hoặc game đang tự xoay ngang trên điện thoại cầm dọc */
+@custom-variant short {
+  @media (max-height: 480px) {
+    @slot;
+  }
+  @media (orientation: portrait) and (max-width: 767px) {
+    .force-landscape & {
+      @slot;
+    }
+  }
+}
+
 /* ===== Design tokens — tối, trung tính, 1 màu nhấn vàng đồng ===== */
 @theme {
   --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
@@ -74,4 +86,50 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .ball-gold-soft {
   background: radial-gradient(circle at 32% 26%, #fffbf0 0 9%, #f5e6bd 30%, #d9bd7c 72%, #a7884a 100%);
   box-shadow: inset -3px -5px 10px rgba(0, 0, 0, .15), 0 6px 12px rgba(16, 24, 40, .18);
+}
+
+/* Đua Ngựa: chân phi, thân nhún, đuôi bay */
+.horse .leg { transform-box: fill-box; transform-origin: 50% 0; transform: rotate(0deg); }
+.horse .tail { transform-box: fill-box; transform-origin: 100% 0; }
+.horse.run .leg-a { animation: hr-leg-a var(--pace, .32s) linear infinite; }
+.horse.run .leg-b { animation: hr-leg-b var(--pace, .32s) linear infinite; }
+.horse.run .horse-body { animation: hr-bob calc(var(--pace, .32s) / 2) ease-in-out infinite; }
+.horse.run .tail { animation: hr-tail var(--pace, .32s) ease-in-out infinite; }
+@keyframes hr-leg-a { 0%, 100% { transform: rotate(32deg); } 50% { transform: rotate(-28deg); } }
+@keyframes hr-leg-b { 0%, 100% { transform: rotate(-28deg); } 50% { transform: rotate(32deg); } }
+@keyframes hr-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6px); } }
+@keyframes hr-tail { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(10deg); } }
+
+/*
+ * Game màn hình ngang (Đua Ngựa): điện thoại đang cầm dọc mà không khoá xoay được
+ * thì xoay cả giao diện 90° — cầm ngang điện thoại (xoay trái) là thấy đúng chiều.
+ * Khi điện thoại đã nằm ngang thật thì media query không khớp, hiện bình thường.
+ */
+@media (orientation: portrait) and (max-width: 767px) {
+  .force-landscape {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vh;
+    width: 100dvh;
+    height: 100vw;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    transform-origin: top left;
+    transform: rotate(90deg) translateY(-100%);
+    /* sau khi xoay: mép trái = tai thỏ (trên cùng máy), mép phải = thanh home (dưới cùng máy) */
+    padding-left: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-bottom);
+  }
+  .force-landscape .app-header {
+    margin-top: 0;
+    padding-top: 0;
+  }
+}
+
+/* Header dính trên cùng: lấn lên vùng tai thỏ rồi đệm lại, để khi cuộn nội dung không lọt dưới giờ/pin */
+.app-header {
+  margin-top: calc(-1 * env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
 }

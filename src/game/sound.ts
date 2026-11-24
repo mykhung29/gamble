@@ -75,6 +75,16 @@ export const sfx = {
   deal() {
     for (let i = 0; i < 6; i++) rattle(i * 0.09)
   },
+  /** tiếng vó ngựa trong ms mili giây */
+  gallop(ms: number) {
+    const beats = Math.floor(ms / 105)
+    for (let i = 0; i < beats; i++) tone(85 + Math.random() * 45, 0.06, 'sine', 0.1, i * 0.105 + Math.random() * 0.02)
+  },
+  /** chuông xuất phát */
+  bell() {
+    tone(1320, 0.35, 'triangle', 0.12)
+    tone(1760, 0.3, 'triangle', 0.08, 0.05)
+  },
   tick() {
     tone(1000, 0.05, 'square', 0.05)
   },

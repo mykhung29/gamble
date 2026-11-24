@@ -8,6 +8,7 @@ import type { TxRecord } from '../game/taixiu'
 import type { XsRecord } from '../game/xoso'
 import type { PkRecord } from '../game/penalty'
 import type { CupRecord } from '../game/cups'
+import type { HrRecord } from '../game/horses'
 import { AnimatedNumber } from './AnimatedNumber'
 import { Button } from './Button'
 import { Modal } from './Modal'
@@ -19,8 +20,36 @@ import { TaiXiu } from './games/TaiXiu'
 import { XoSo } from './games/XoSo'
 import { Penalty } from './games/Penalty'
 import { DoanLy } from './games/DoanLy'
+import { DuaNgua } from './games/DuaNgua'
 
 const sumNet = (h: { net: number }[]) => h.reduce((s, r) => s + r.net, 0)
+
+/** game chơi màn hình ngang */
+const LANDSCAPE: GameId[] = ['duangua']
+
+type LockableOrientation = ScreenOrientation & { lock?: (o: string) => Promise<void>; unlock?: () => void }
+
+/**
+ * Điện thoại: xin toàn màn hình rồi khoá xoay ngang (Android Chrome làm được).
+ * Máy không cho khoá (iPhone) thì CSS .force-landscape tự xoay giao diện 90°.
+ * Phải gọi ngay trong sự kiện bấm, trình duyệt mới cho phép.
+ */
+function lockLandscape() {
+  if (!window.matchMedia('(pointer: coarse)').matches) return
+  document.documentElement
+    .requestFullscreen?.()
+    .then(() => (screen.orientation as LockableOrientation).lock?.('landscape'))
+    .catch(() => {})
+}
+
+function unlockLandscape() {
+  try {
+    ;(screen.orientation as LockableOrientation).unlock?.()
+  } catch {
+    /* ignore */
+  }
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+}
 
 interface Props {
   save: SaveData
@@ -56,21 +85,24 @@ export function GameShell({ save, setBalance, push, hold, onTopUp, onReset }: Pr
   const common = { balance: save.balance, setBalance, onActiveChange: setActive, onNoMoney: warnNoMoney }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex min-h-screen flex-col">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={`flex min-h-screen flex-col ${game && LANDSCAPE.includes(game) ? 'force-landscape' : ''}`}>
       {/* Thanh trên cùng */}
-      <header className="sticky top-0 z-30 border-b border-line bg-bg/95 backdrop-blur">
-        <div className="mx-auto flex h-12 max-w-6xl items-center justify-between gap-2 px-2 sm:h-14 sm:px-4">
+      <header className="app-header sticky top-0 z-30 border-b border-line bg-bg/95 backdrop-blur">
+        <div className="mx-auto flex h-12 max-w-6xl items-center justify-between gap-2 px-2 sm:h-14 sm:px-4 short:h-10">
           <div className="flex min-w-0 items-center gap-3">
             {game ? (
               <button
                 disabled={active}
-                onClick={() => setGame(null)}
+                onClick={() => {
+                  unlockLandscape()
+                  setGame(null)
+                }}
                 className="flex h-8 items-center gap-1.5 rounded-sm border border-line px-2.5 text-xs font-medium text-mute transition-colors hover:border-line-strong hover:text-ink disabled:opacity-40"
               >
                 <span aria-hidden>‹</span> Sảnh
               </button>
             ) : (
-              <span className="grid size-7 place-items-center rounded-sm bg-gold text-sm font-bold text-white">G</span>
+              <span className="grid size-7 shrink-0 place-items-center rounded-sm bg-gold text-sm font-bold text-white">G</span>
             )}
             <div className="flex min-w-0 items-baseline gap-2">
               <h1 className={`truncate text-sm font-semibold tracking-wide uppercase sm:block sm:text-base ${game ? '' : 'hidden'}`}>{game ? GAME_NAMES[game] : 'Game Vui Vẻ'}</h1>
@@ -92,20 +124,20 @@ export function GameShell({ save, setBalance, push, hold, onTopUp, onReset }: Pr
             {/* Nạp / reset: chỉ hiện ở sảnh */}
             {game === null && (
               <>
-                <Button variant="gold" disabled={active} onClick={onTopUp}>
+                <Button variant="gold" className="max-[359px]:px-2 max-[359px]:text-xs" disabled={active} onClick={onTopUp}>
                   Nạp điểm
                 </Button>
-                <Button variant="ghost" disabled={active} onClick={() => setAskReset(true)}>
+                <Button variant="ghost" className="max-[359px]:px-2 max-[359px]:text-xs" disabled={active} onClick={() => setAskReset(true)}>
                   Đổi điểm
                 </Button>
               </>
             )}
           </div>
         </div>
-        {active && <div className="border-t border-line bg-panel py-1 text-center text-xs text-mute">Đang trong ván — kết thúc ván để quay lại sảnh</div>}
+        {active && <div className="border-t border-line bg-panel py-1 text-center text-xs text-mute short:hidden">Đang trong ván — kết thúc ván để quay lại sảnh</div>}
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 p-2 sm:p-4">
+      <main className="mx-auto w-full max-w-6xl flex-1 p-2 sm:p-4 short:p-1">
         <AnimatePresence mode="wait">
           <motion.div
             key={`${game ?? 'menu'}-${resetKey}`}
@@ -123,6 +155,7 @@ export function GameShell({ save, setBalance, push, hold, onTopUp, onReset }: Pr
                     return
                   }
                   sfx.chip()
+                  if (LANDSCAPE.includes(id)) lockLandscape()
                   setGame(id)
                 }}
                 played={{
@@ -132,6 +165,7 @@ export function GameShell({ save, setBalance, push, hold, onTopUp, onReset }: Pr
                   xoso: { rounds: save.xsHistory.length, net: sumNet(save.xsHistory) },
                   penalty: { rounds: save.pkHistory.length, net: sumNet(save.pkHistory) },
                   doanly: { rounds: save.cupHistory.length, net: sumNet(save.cupHistory) },
+                  duangua: { rounds: save.hrHistory.length, net: sumNet(save.hrHistory) },
                 }}
               />
             )}
@@ -140,6 +174,7 @@ export function GameShell({ save, setBalance, push, hold, onTopUp, onReset }: Pr
             {game === 'baicao' && <BaiCao {...common} history={save.bcHistory} pushHistory={(r: BcRecord) => push('bcHistory', r)} hold={(h) => hold('bcHistory', h)} />}
             {game === 'doanly' && <DoanLy {...common} history={save.cupHistory} pushHistory={(r: CupRecord) => push('cupHistory', r)} hold={(h) => hold('cupHistory', h)} />}
             {game === 'penalty' && <Penalty {...common} history={save.pkHistory} pushHistory={(r: PkRecord) => push('pkHistory', r)} hold={(h) => hold('pkHistory', h)} />}
+            {game === 'duangua' && <DuaNgua {...common} history={save.hrHistory} pushHistory={(r: HrRecord) => push('hrHistory', r)} hold={(h) => hold('hrHistory', h)} />}
             {game === 'xoso' && <XoSo {...common} history={save.xsHistory} pushHistory={(r: XsRecord) => push('xsHistory', r)} hold={(h) => hold('xsHistory', h)} />}
           </motion.div>
         </AnimatePresence>

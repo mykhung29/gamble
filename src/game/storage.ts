@@ -4,6 +4,7 @@ import type { TxRecord } from './taixiu'
 import type { XsRecord } from './xoso'
 import type { PkRecord } from './penalty'
 import type { CupRecord } from './cups'
+import type { HrRecord } from './horses'
 
 const KEY = 'baucua-save-v1'
 
@@ -16,6 +17,7 @@ export interface SaveData {
   xsHistory: XsRecord[]
   pkHistory: PkRecord[]
   cupHistory: CupRecord[]
+  hrHistory: HrRecord[]
   /**
    * Tiền đang "treo" của ván chưa xong, theo từng game (khoá = lịch sử của game đó).
    * Tải lại trang / tắt tab giữa ván thì lần mở sau sẽ trả số này vào điểm:
@@ -30,9 +32,9 @@ export interface Hold<R = unknown> {
   record?: R
 }
 
-export type HistoryKey = 'history' | 'txHistory' | 'bcHistory' | 'xsHistory' | 'pkHistory' | 'cupHistory'
+export type HistoryKey = 'history' | 'txHistory' | 'bcHistory' | 'xsHistory' | 'pkHistory' | 'cupHistory' | 'hrHistory'
 
-export const emptySave = (): SaveData => ({ balance: 0, history: [], txHistory: [], bcHistory: [], xsHistory: [], pkHistory: [], cupHistory: [], pending: {} })
+export const emptySave = (): SaveData => ({ balance: 0, history: [], txHistory: [], bcHistory: [], xsHistory: [], pkHistory: [], cupHistory: [], hrHistory: [], pending: {} })
 
 export function loadSave(): SaveData {
   try {
@@ -48,6 +50,7 @@ export function loadSave(): SaveData {
           xsHistory: Array.isArray(d.xsHistory) ? d.xsHistory : [],
           pkHistory: Array.isArray(d.pkHistory) ? d.pkHistory : [],
           cupHistory: Array.isArray(d.cupHistory) ? d.cupHistory : [],
+          hrHistory: Array.isArray(d.hrHistory) ? d.hrHistory : [],
           pending: {},
         }
         return settlePending(save, d.pending)

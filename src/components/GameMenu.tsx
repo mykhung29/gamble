@@ -3,12 +3,14 @@ import type { ReactNode } from 'react'
 import chenImg from '../assets/baucua/chen.webp'
 import { CUP_PAYOUT, PK_PAYOUT, XS_CANG_PAYOUT, XS_DE_PAYOUT } from '../config'
 import { fmt } from '../format'
+import { HORSES } from '../game/horses'
 import { SYMBOL_MAP } from '../game/symbols'
+import { HorseSprite } from './games/HorseArt'
 import { PipFace } from './games/TaiXiu'
 
-export type GameId = 'baucua' | 'taixiu' | 'baicao' | 'xoso' | 'penalty' | 'doanly'
+export type GameId = 'baucua' | 'taixiu' | 'baicao' | 'xoso' | 'penalty' | 'doanly' | 'duangua'
 
-export const GAME_NAMES: Record<GameId, string> = { baucua: 'Bầu Cua', taixiu: 'Tài Xỉu', baicao: 'Bài Cào', xoso: 'Xổ Số', penalty: 'Penalty', doanly: 'Đoán Ly' }
+export const GAME_NAMES: Record<GameId, string> = { baucua: 'Bầu Cua', taixiu: 'Tài Xỉu', baicao: 'Bài Cào', xoso: 'Xổ Số', penalty: 'Penalty', doanly: 'Đoán Ly', duangua: 'Đua Ngựa' }
 
 function MiniDie({ children }: { children: ReactNode }) {
   return <div className="grid size-14 place-items-center overflow-hidden rounded-sm border border-stone-300 bg-stone-100 shadow-md sm:size-16">{children}</div>
@@ -75,6 +77,15 @@ const ART: Record<GameId, ReactNode> = {
       <span className="absolute bottom-1 left-1/2 size-4 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_35%_30%,#fff7d6,#f2c94c_35%,#a8731a)] shadow sm:size-5" />
     </div>
   ),
+  duangua: (
+    <div className="relative h-24 w-44">
+      {[0, 3, 1].map((h, i) => (
+        <div key={h} className="absolute w-20" style={{ left: `${[34, 4, 62][i]}%`, top: `${i * 22}%`, translate: '-25% 0' }}>
+          <HorseSprite horse={HORSES[h]} num={h + 1} className="w-full" />
+        </div>
+      ))}
+    </div>
+  ),
   penalty: (
     <svg viewBox="0 0 160 96" className="h-24 w-40 overflow-hidden rounded-sm" aria-hidden>
       <rect width={160} height={60} fill="#1b2533" />
@@ -103,6 +114,7 @@ const INFO: Record<GameId, { desc: string; rule: string; tone: string; hot?: boo
   baicao: { desc: 'Ba lá đấu nhà cái', rule: 'Trả 1:1 · Hoà trả vốn', tone: 'from-[#e5f2ea]' },
   doanly: { desc: 'Theo dõi bóng dưới 3 ly đang tráo', rule: `Trả 1:${String(CUP_PAYOUT).replace('.', ',')}`, tone: 'from-[#f6efe3]' },
   penalty: { desc: 'Vuốt để sút, qua thủ môn là thắng', rule: `Trả 1:${String(PK_PAYOUT).replace('.', ',')}`, tone: 'from-[#e3f1e7]' },
+  duangua: { desc: '6 ngựa đua, chọn con về nhất', rule: 'Kèo đổi theo từng ván', tone: 'from-[#e4efe0]' },
   xoso: { desc: 'Đoán số cuối giải đặc biệt', rule: `Đề 1:${XS_DE_PAYOUT} · Càng 1:${XS_CANG_PAYOUT}`, tone: 'from-[#fbf3e1]' },
 }
 
@@ -114,7 +126,7 @@ export function GameMenu({
   played: Record<GameId, { rounds: number; net: number }>
 }) {
   // 'penalty' tạm ẩn — thêm lại vào danh sách để hiện
-  const ids: GameId[] = ['baucua', 'taixiu', 'xoso', 'doanly', 'baicao']
+  const ids: GameId[] = ['baucua', 'taixiu', 'xoso', 'duangua', 'doanly', 'baicao']
   return (
     <div className="flex flex-col">
       <div className="grid grid-cols-2 gap-2">
@@ -130,7 +142,7 @@ export function GameMenu({
               className="group flex flex-col overflow-hidden rounded-md border border-line bg-panel text-left transition-colors hover:border-gold/60"
             >
               <div className={`relative flex h-28 items-center justify-center overflow-hidden border-b border-line bg-gradient-to-br to-panel-2 sm:h-44 ${INFO[id].tone}`}>
-                <div className="scale-[.6] min-[380px]:scale-[.7] sm:scale-100">{ART[id]}</div>
+                <div className="scale-[.5] min-[360px]:scale-[.6] min-[380px]:scale-[.7] sm:scale-100">{ART[id]}</div>
                 {INFO[id].hot && (
                   <span className="absolute top-2 left-2 rounded-xs bg-down px-1.5 py-0.5 text-[10px] leading-none font-bold tracking-wider text-white">HOT</span>
                 )}
