@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BET_SECONDS, NEXT_ROUND_SECONDS } from '../../config'
 import { sfx } from '../../game/sound'
 import type { Phase } from '../Bowl'
+import type { Hold } from '../../game/storage'
 
 /**
  * Vòng tự động: vào game tự lắc → đếm ngược BET_SECONDS rồi tự khui
@@ -53,6 +54,8 @@ export interface GameProps<R> {
   setBalance: (fn: (b: number) => number) => void
   history: R[]
   pushHistory: (r: R) => void
+  /** ghi tiền treo của ván đang dở (null = ván đã xong) — xem SaveData.pending */
+  hold: (h: Hold<R> | null) => void
   /** báo cho khung ngoài biết đang giữa ván (khoá đổi game / thoát / nạp / reset) */
   onActiveChange: (active: boolean) => void
   onNoMoney: () => void

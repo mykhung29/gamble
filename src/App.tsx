@@ -3,7 +3,7 @@ import { AnimatePresence } from 'motion/react'
 import { GameShell } from './components/GameShell'
 import { GrantScreen } from './components/GrantScreen'
 import { LoginScreen } from './components/LoginScreen'
-import { type HistoryKey, type SaveData, emptySave, loadSave, persist } from './game/storage'
+import { type HistoryKey, type Hold, type SaveData, emptySave, loadSave, persist } from './game/storage'
 
 type Screen = 'login' | 'grant' | 'game'
 
@@ -17,6 +17,18 @@ export default function App() {
   const setBalance = useCallback((fn: (b: number) => number) => setSave((s) => ({ ...s, balance: Math.max(0, fn(s.balance)) })), [])
   const push = useCallback(
     <K extends HistoryKey>(key: K, r: SaveData[K][number]) => setSave((s) => ({ ...s, [key]: [r, ...s[key]].slice(0, 30) }) as SaveData),
+    [],
+  )
+
+  /** Ghi / xoá tiền treo của 1 game (lưu cùng lúc với điểm nên tải lại trang không mất) */
+  const hold = useCallback(
+    (key: HistoryKey, h: Hold | null) =>
+      setSave((s) => {
+        const pending = { ...s.pending }
+        if (h) pending[key] = h
+        else delete pending[key]
+        return { ...s, pending }
+      }),
     [],
   )
 
@@ -44,6 +56,7 @@ export default function App() {
           save={save}
           setBalance={setBalance}
           push={push}
+          hold={hold}
           onTopUp={() => setScreen('login')}
           onReset={() => setSave(emptySave())}
         />

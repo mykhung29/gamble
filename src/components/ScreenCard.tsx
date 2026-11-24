@@ -1,38 +1,38 @@
 import { motion } from 'motion/react'
 import type { ReactNode } from 'react'
-import { SYMBOL_IDS } from '../game/logic'
-import { SymbolIcon } from '../game/symbols'
 
-/** Khung chung cho màn hình mật khẩu / cấp điểm, có các con vật bay lơ lửng phía sau */
-export function ScreenCard({ children }: { children: ReactNode }) {
+/** Khung chung cho màn hình mật khẩu / cấp điểm */
+export function ScreenCard({ title, subtitle, onBack, children }: { title: string; subtitle?: string; onBack?: () => void; children: ReactNode }) {
   return (
     <motion.div
-      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4"
+      className="relative flex min-h-screen items-center justify-center px-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 0.97 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
     >
-      {SYMBOL_IDS.map((id, i) => (
-        <motion.div
-          key={id}
-          className="pointer-events-none absolute opacity-20"
-          style={{ left: `${8 + i * 15}%`, top: `${i % 2 ? 70 : 12}%` }}
-          animate={{ y: [0, -24, 0], rotate: [0, i % 2 ? 12 : -12, 0] }}
-          transition={{ duration: 4 + i * 0.6, repeat: Infinity, ease: 'easeInOut' }}
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="absolute top-3 left-3 flex h-8 items-center gap-1.5 rounded-sm border border-line bg-panel px-2.5 text-xs font-medium text-mute transition-colors hover:border-line-strong hover:text-ink sm:top-4 sm:left-5"
         >
-          <SymbolIcon id={id} size={72} />
-        </motion.div>
-      ))}
-      <motion.div
-        initial={{ y: 30, scale: 0.95 }}
-        animate={{ y: 0, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-        className="pattern relative w-full max-w-md rounded-3xl border-2 border-amber-400/60 bg-red-950/80 p-6 shadow-2xl backdrop-blur sm:p-8"
-      >
-        <h1 className="gold-text text-center font-display text-5xl drop-shadow sm:text-6xl">Game Vui Vẻ</h1>
-        <p className="mb-6 mt-1 text-center text-sm tracking-[0.15em] text-amber-200/70 uppercase">Bầu Cua · Tài Xỉu · Bài Cào</p>
-        {children}
-      </motion.div>
+          <span aria-hidden>‹</span> Quay lại
+        </button>
+      )}
+      <div className="w-full max-w-sm">
+        <div className="mb-5 flex items-center gap-2.5">
+          <span className="grid size-7 place-items-center rounded-sm bg-gold text-sm font-bold text-white">G</span>
+          <span className="text-sm font-semibold tracking-wide uppercase">Game Vui Vẻ</span>
+        </div>
+        <div className="rounded-md border border-line bg-panel">
+          <div className="border-b border-line px-4 py-3">
+            {subtitle && <div className="label">{subtitle}</div>}
+            <h1 className="text-base font-semibold">{title}</h1>
+          </div>
+          <div className="p-4">{children}</div>
+        </div>
+      </div>
     </motion.div>
   )
 }

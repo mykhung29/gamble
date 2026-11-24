@@ -25,63 +25,43 @@ export function BetTile({
   const lost = revealed && amount > 0 && hits === 0
 
   return (
-    <motion.button
+    <button
       onClick={onAdd}
       onContextMenu={(e) => {
         e.preventDefault()
         onRemove()
       }}
-      whileHover={locked ? undefined : { y: -4 }}
-      whileTap={locked ? undefined : { scale: 0.96 }}
-      animate={won ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-      transition={won ? { duration: 0.5, repeat: 2 } : undefined}
-      className={`relative aspect-[10/9] overflow-hidden rounded-xl border-2 bg-black sm:rounded-2xl sm:border-4 shadow-xl transition-[filter,opacity,box-shadow] ${
-        won ? 'z-10 border-yellow-300 shadow-[0_0_35px_rgba(250,204,21,.75)]' : 'border-amber-200/30'
-      } ${lost ? 'opacity-45 grayscale-[.7]' : ''} ${locked ? 'cursor-default' : 'cursor-pointer'}`}
+      className={`group relative flex flex-col overflow-hidden rounded-sm border bg-panel-2 text-left transition-[border-color,opacity,filter] ${
+        won ? 'border-gold ring-1 ring-gold' : amount > 0 ? 'border-line-strong' : 'border-line'
+      } ${lost ? 'opacity-40 grayscale' : ''} ${revealed && !won && !lost ? 'opacity-60' : ''} ${locked ? 'cursor-default' : 'cursor-pointer hover:border-gold/70'}`}
       aria-label={`Đặt cược ${sym.name}`}
     >
-      <img src={sym.img} alt="" draggable={false} className="absolute inset-0 size-full object-cover" />
-      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent pt-3 pb-0.5 text-center font-display text-base text-amber-50 drop-shadow sm:text-xl">
-        {sym.name}
-      </span>
-
-      {won && (
-        <motion.div
-          initial={{ scale: 0, rotate: -30 }}
-          animate={{ scale: 1, rotate: -8 }}
-          className="absolute top-2 left-2 rounded-lg bg-yellow-300 px-2 py-0.5 text-sm font-extrabold text-red-900 shadow"
-        >
-          ×{hits}
-        </motion.div>
-      )}
-
-      <AnimatePresence>
+      <div className="relative aspect-square w-full overflow-hidden bg-black">
+        <img src={sym.img} alt="" draggable={false} className="absolute inset-0 size-full object-cover" />
+        {won && <span className="absolute top-1.5 left-1.5 rounded-xs bg-gold px-1.5 py-0.5 text-xs font-bold text-white">×{hits}</span>}
+        <AnimatePresence>
+          {won && payout > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: [0, 1, 1, 0], y: -18 }}
+              transition={{ duration: 1.6, delay: 0.4 }}
+              className="pointer-events-none absolute inset-x-0 top-1/3 text-center text-xl font-bold text-gold-hi drop-shadow-[0_1px_2px_rgba(0,0,0,.9)]"
+            >
+              +{fmt(payout)}
+            </motion.div>
+          )}
+        </AnimatePresence>
         {amount > 0 && (
-          <motion.div
+          <motion.span
             key={amount}
-            initial={{ scale: 1.5, y: -6 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0, opacity: 0 }}
-            className="absolute top-2 right-2 flex items-center gap-1 rounded-full border-2 border-amber-200 bg-zinc-900/85 py-0.5 pr-2.5 pl-1 text-sm font-extrabold text-amber-300 shadow-lg"
+            initial={{ opacity: 0.4 }}
+            animate={{ opacity: 1 }}
+            className="absolute right-1.5 bottom-1.5 max-w-[calc(100%-12px)] truncate rounded-xs border border-gold/60 bg-black/80 px-1.5 py-0.5 text-xs font-semibold text-gold tabular-nums sm:text-sm"
           >
-            <span className="size-4 rounded-full border-2 border-dashed border-amber-300 bg-red-600" />
             {fmt(amount)}
-          </motion.div>
+          </motion.span>
         )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {won && payout > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: [0, 1, 1, 0], y: -40 }}
-            transition={{ duration: 1.8, delay: 0.5 }}
-            className="pointer-events-none absolute inset-x-0 top-1/3 text-center text-2xl font-extrabold text-yellow-200 drop-shadow-[0_2px_2px_rgba(0,0,0,.8)]"
-          >
-            +{fmt(payout)}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.button>
+      </div>
+    </button>
   )
 }

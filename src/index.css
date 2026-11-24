@@ -1,36 +1,48 @@
 @import "tailwindcss";
 
+/* ===== Design tokens — tối, trung tính, 1 màu nhấn vàng đồng ===== */
 @theme {
   --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Lobster", "Be Vietnam Pro", cursive;
+
+  --color-bg: #f4f5f7;
+  --color-panel: #ffffff;
+  --color-panel-2: #f8f9fa;
+  --color-panel-3: #eef0f3;
+  --color-line: #e2e5ea;
+  --color-line-strong: #c9ced6;
+  --color-ink: #16181d;
+  --color-mute: #5d6470;
+  --color-dim: #9198a3;
+  --color-gold: #b38a2e;
+  --color-gold-hi: #9c7623;
+  --color-up: #15803d;
+  --color-down: #c62828;
+
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
 }
 
 html, body, #root { min-height: 100%; }
 
 body {
   margin: 0;
-  color: #fff7e6;
-  background:
-    radial-gradient(circle at 50% -10%, #b91c1c 0%, transparent 60%),
-    radial-gradient(circle at 100% 100%, #7c2d12 0%, transparent 50%),
-    #3b0a0a;
-  background-attachment: fixed;
+  color: var(--color-ink);
+  background: var(--color-bg);
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
-  /* chừa tai thỏ / thanh home trên iPhone */
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   user-select: none;
 }
 
-.gold-text {
-  background: linear-gradient(180deg, #fff3b0 0%, #facc15 45%, #b45309 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.pattern {
-  background-image: radial-gradient(rgba(250, 204, 21, 0.12) 1px, transparent 1px);
-  background-size: 18px 18px;
+/* Nhãn nhỏ viết hoa dùng chung cho tiêu đề khối */
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-mute);
 }
 
 input[type=number]::-webkit-inner-spin-button,
@@ -43,9 +55,23 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 .flip-y { transform: rotateY(180deg); }
 .card-back {
   background:
-    repeating-linear-gradient(45deg, rgba(255,255,255,.12) 0 6px, transparent 6px 12px),
-    radial-gradient(circle at 50% 50%, #dc2626, #7f1d1d);
+    repeating-linear-gradient(45deg, rgba(200, 162, 76, .10) 0 2px, transparent 2px 7px),
+    #1a2233;
 }
 .felt {
-  background: radial-gradient(ellipse at 50% 40%, #15803d 0%, #14532d 70%, #052e16 100%);
+  background: radial-gradient(ellipse at 50% 35%, #17402e 0%, #0f2a1f 75%);
+}
+
+/* Bi xổ số: khối cầu có điểm sáng góc trên trái */
+.ball {
+  background: radial-gradient(circle at 32% 26%, #ffffff 0 9%, #eef0f3 28%, #c8cdd5 72%, #98a0ab 100%);
+  box-shadow: inset -3px -5px 10px rgba(0, 0, 0, .14), 0 6px 12px rgba(16, 24, 40, .18);
+}
+.ball-gold {
+  background: radial-gradient(circle at 32% 26%, #fff8de 0 8%, #f2d27d 30%, #c79a3a 72%, #87631c 100%);
+  box-shadow: inset -3px -5px 10px rgba(0, 0, 0, .18), 0 6px 12px rgba(16, 24, 40, .2);
+}
+.ball-gold-soft {
+  background: radial-gradient(circle at 32% 26%, #fffbf0 0 9%, #f5e6bd 30%, #d9bd7c 72%, #a7884a 100%);
+  box-shadow: inset -3px -5px 10px rgba(0, 0, 0, .15), 0 6px 12px rgba(16, 24, 40, .18);
 }

@@ -1,139 +1,148 @@
-import { useEffect, type ReactNode } from "react";
-import { motion, useAnimationControls } from "motion/react";
+import { useEffect, useState, type ReactNode } from 'react'
+import { AnimatePresence, motion, useAnimationControls } from 'motion/react'
+import chenImg from '../assets/baucua/chen.webp'
+import diaImg from '../assets/baucua/dia.webp'
 
 /** idle: chờ lắc · shaking: đang lắc · betting: đã lắc, đang đặt cược · revealed: đã khui */
-export type Phase = "idle" | "shaking" | "betting" | "revealed";
+export type Phase = 'idle' | 'shaking' | 'betting' | 'revealed'
 
-const TILTS = [-8, 6, -3];
+type Three<T> = [T, T, T]
 
-/** Hiệu ứng xúc xắc bật ra khi khui */
-export function DieShell({
-  index,
-  revealed,
-  border,
-  children,
-}: {
-  index: number;
-  revealed: boolean;
-  border?: string;
-  children: ReactNode;
-}) {
+const TILTS = [-4, 3, -2]
+
+/** Khui xong bao lâu thì phóng to mặt xúc xắc, và giữ phóng to bao lâu (ms) */
+const ZOOM_IN_MS = 950
+const ZOOM_HOLD_MS = 3200
+
+/** Vỏ xúc xắc, kích thước do class truyền vào */
+function Die({ face, border, className }: { face: ReactNode; border?: string; className: string }) {
   return (
-    <motion.div
-      initial={revealed ? { scale: 0.3, rotate: 180, opacity: 0 } : false}
-      animate={{ scale: 1, rotate: TILTS[index], opacity: 1 }}
-      transition={{
-        type: "spring",
-        stiffness: 260,
-        damping: 14,
-        delay: revealed ? 0.15 + index * 0.18 : 0,
-      }}
-      className="grid size-[4.5rem] place-items-center overflow-hidden rounded-2xl border-[3px] bg-gradient-to-br from-white to-stone-200 shadow-[0_6px_0_rgba(0,0,0,.25),0_10px_20px_rgba(0,0,0,.3)] sm:size-20"
-      style={{ borderColor: border ?? "#d6d3d1" }}
-    >
-      {children}
-    </motion.div>
-  );
+    <div className={`grid place-items-center overflow-hidden border-2 bg-stone-100 ${className}`} style={{ borderColor: border ?? '#d6d3d1' }}>
+      {face}
+    </div>
+  )
 }
 
-/** Đĩa + bát úp. children = 3 xúc xắc (2 trên, 1 dưới) */
-/** overlay: thứ hiển thị đè lên mép trên bát (vd. đồng hồ đếm ngược), không rung theo bát */
+/*
+ * Bố cục (theo % khung, khung tỉ lệ 100:80):
+ *  - Đĩa: rộng 100%, nằm sát đáy khung.
+ *  - Chén: rộng 76%, miệng chén úp xuống lòng đĩa.
+ *  - Xúc xắc: 2 con trên, 1 con dưới, đặt ở lòng đĩa (chỉ render khi đã khui).
+ *  - Khui xong: phóng to 3 mặt ra giữa khung vài giây cho dễ nhìn (bấm để đóng sớm).
+ */
+
+/** Đĩa + chén úp. faces = nội dung mặt 3 xúc xắc, borders = màu viền từng con */
 export function Bowl({
   phase,
-  hint,
-  dice,
-  overlay,
+  faces,
+  borders,
+  roundKey,
 }: {
-  phase: Phase;
-  hint?: string;
-  dice: [ReactNode, ReactNode, ReactNode];
-  overlay?: ReactNode;
+  phase: Phase
+  faces: Three<ReactNode>
+  borders?: Three<string | undefined>
+  /** đổi mỗi ván để hiệu ứng xúc xắc chạy lại */
+  roundKey: number
 }) {
-  const controls = useAnimationControls();
-  const revealed = phase === "revealed";
+  const controls = useAnimationControls()
+  const revealed = phase === 'revealed'
+  const [zoom, setZoom] = useState(false)
 
   useEffect(() => {
     if (revealed) {
+      // nhấc chén lên rồi đưa ra sau
       void controls.start({
-        x: 170,
-        y: -130,
-        rotate: 28,
-        opacity: 0,
-        transition: { duration: 0.55, ease: "easeIn" },
-      });
-    } else {
-      void controls.start({
-        x: 0,
-        y: 0,
-        rotate: 0,
-        opacity: 1,
-        transition: { type: "spring", stiffness: 240, damping: 22 },
-      });
+        y: ['0%', '-38%', '-60%'],
+        x: ['0%', '0%', '30%'],
+        rotate: [0, -6, 14],
+        opacity: [1, 1, 0],
+        transition: { duration: 0.7, times: [0, 0.45, 1], ease: 'easeInOut' },
+      })
+      const a = window.setTimeout(() => setZoom(true), ZOOM_IN_MS)
+      const b = window.setTimeout(() => setZoom(false), ZOOM_IN_MS + ZOOM_HOLD_MS)
+      return () => {
+        window.clearTimeout(a)
+        window.clearTimeout(b)
+        setZoom(false)
+      }
     }
-  }, [revealed, controls]);
+    void controls.start({ y: '0%', x: '0%', rotate: 0, opacity: 1, transition: { duration: 0.35, ease: 'easeOut' } })
+  }, [revealed, controls])
+
+  const small = (i: number) => (
+    <motion.div
+      key={`${roundKey}-s${i}`}
+      initial={{ scale: 0.5, y: -10, opacity: 0 }}
+      animate={{ scale: 1, y: 0, rotate: TILTS[i], opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 18, delay: 0.25 + i * 0.12 }}
+    >
+      <Die face={faces[i]} border={borders?.[i]} className="size-[16.5cqw] rounded-md shadow-[0_4px_8px_rgba(0,0,0,.3)]" />
+    </motion.div>
+  )
 
   return (
-    <div className="relative">
-      <motion.div
-        className="relative size-56 sm:size-72"
-        animate={
-          phase === "shaking"
-            ? {
-                x: [0, -16, 14, -12, 10, -6, 0],
-                y: [0, -8, 4, -10, 6, -4, 0],
-                rotate: [0, -5, 4, -3, 5, -2, 0],
-                scale: 1.04,
-              }
-            : { x: 0, y: 0, rotate: 0, scale: 1 }
-        }
-        transition={
-          phase === "shaking"
-            ? { duration: 0.4, repeat: Infinity }
-            : { duration: 0.3 }
-        }
-      >
-        {/* Đĩa sứ */}
-        <div className="absolute inset-0 rounded-full border-[10px] border-sky-800 bg-[radial-gradient(circle_at_40%_35%,#ffffff,#e7e5e4_60%,#a8a29e)] shadow-[0_20px_40px_rgba(0,0,0,.5)]">
-          <div className="absolute inset-3 rounded-full border-2 border-dashed border-sky-700/40" />
-        </div>
+    <motion.div
+      className="@container relative mx-auto aspect-[100/80] w-full max-w-[30rem] select-none"
+      animate={
+        phase === 'shaking'
+          ? { x: [0, -10, 9, -8, 7, -4, 0], y: [0, -6, 2, -7, 3, -2, 0], rotate: [0, -3, 2.5, -2, 2, -1, 0] }
+          : { x: 0, y: 0, rotate: 0 }
+      }
+      transition={phase === 'shaking' ? { duration: 0.35, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.25 }}
+    >
+      {/* bóng đổ dưới đĩa */}
+      <div className="absolute inset-x-[6%] bottom-[-2%] h-[14%] rounded-[50%] bg-black/25 blur-md" />
 
-        {/* Xúc xắc — chỉ hiện khi đã khui */}
-        {revealed && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <div className="flex gap-2">
-              {dice[0]}
-              {dice[1]}
-            </div>
-            {dice[2]}
-          </div>
-        )}
+      {/* Đĩa */}
+      <img src={diaImg} alt="" draggable={false} className="absolute bottom-0 left-0 w-full" />
 
-        {/* Bát úp */}
-        <motion.div
-          animate={controls}
-          className="absolute -inset-2 rounded-full border-4 border-amber-300 bg-[radial-gradient(circle_at_35%_30%,#fde68a_0%,#d97706_18%,#9a3412_50%,#431407_100%)] shadow-[0_25px_50px_rgba(0,0,0,.6),inset_0_-10px_30px_rgba(0,0,0,.5)]"
-        >
-          <div className="absolute inset-6 rounded-full border-2 border-amber-300/40" />
-          <div className="absolute inset-12 rounded-full border border-amber-300/25" />
-          <div className="absolute top-1/2 left-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-amber-200 bg-[radial-gradient(circle_at_35%_30%,#fef3c7,#b45309_70%)] shadow-lg">
-            <span className="text-2xl">🧧</span>
+      {/* Xúc xắc — chỉ có trong DOM khi đã khui */}
+      {revealed && (
+        <div className="absolute inset-x-0 top-[63%] flex -translate-y-1/2 flex-col items-center gap-[1.5cqw]">
+          <div className="flex gap-[1.5cqw]">
+            {small(0)}
+            {small(1)}
           </div>
-          {hint && (
-            <motion.div
-              className="absolute bottom-8 w-full text-center text-xs font-semibold text-amber-100/90"
-              animate={{ opacity: [0.4, 1, 0.4] }}
-              transition={{ duration: 1.6, repeat: Infinity }}
-            >
-              {hint}
-            </motion.div>
-          )}
-        </motion.div>
-      </motion.div>
-      {overlay && (
-        <div className="absolute top-0 left-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
-          {overlay}
+          {small(2)}
         </div>
       )}
-    </div>
-  );
+
+      {/* Chén úp */}
+      <motion.img
+        src={chenImg}
+        alt=""
+        draggable={false}
+        animate={controls}
+        className="absolute bottom-[14%] left-[12%] z-10 w-[76%] drop-shadow-[0_10px_12px_rgba(0,0,0,.25)]"
+      />
+
+      {/* Phóng to kết quả */}
+      <AnimatePresence>
+        {revealed && zoom && (
+          <motion.div
+            key={`${roundKey}-zoom`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setZoom(false)}
+            className="absolute inset-0 z-20 flex cursor-pointer items-center justify-center gap-[4%] rounded-md bg-white/75 backdrop-blur-[2px]"
+          >
+            {faces.map((f, i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0.4, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.6, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 22, delay: i * 0.08 }}
+                className="aspect-square w-[29%]"
+              >
+                <Die face={f} border={borders?.[i]} className="size-full rounded-lg border-[3px] shadow-[0_10px_24px_rgba(0,0,0,.25)]" />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
 }

@@ -26,3 +26,22 @@ export const BET_SECONDS = 30
 
 /** Khui xong chờ bao lâu thì tự lắc ván mới (giây) */
 export const NEXT_ROUND_SECONDS = 12
+
+/** Xổ Số: Đề (đoán 2 số cuối giải đặc biệt) ăn 1 được bao nhiêu */
+export const XS_DE_PAYOUT = 80
+
+/** Xổ Số: Càng (đoán 3 số cuối giải đặc biệt) ăn 1 được bao nhiêu */
+export const XS_CANG_PAYOUT = 700
+
+/** Xổ Số: tối đa bao nhiêu phiếu cược mỗi kỳ */
+export const XS_MAX_TICKETS = 20
+
+/** Penalty: sút vào (qua thủ môn) thì ăn 1 được bao nhiêu. Bóng trúng khung thì thủ môn bắt 50% */
+export const PK_PAYOUT = 0.9
+
+/** Đoán Ly: đoán đúng ly có bóng thì ăn 1 được bao nhiêu (đoán bừa trúng 1/3) */
+export const CUP_PAYOUT = 1.8
+
+/** Đoán Ly: số lần tráo ly mỗi ván, và thời gian mỗi lần tráo (ms) — càng nhiều/càng nhanh càng khó theo dõi */
+export const CUP_SWAPS = 22
+export const CUP_SWAP_MS = 90

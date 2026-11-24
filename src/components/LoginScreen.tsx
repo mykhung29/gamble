@@ -4,6 +4,7 @@ import { checkPassword } from '../game/password'
 import { sfx } from '../game/sound'
 import { Button } from './Button'
 import { ChangePasswordDialog } from './ChangePasswordDialog'
+import { inputCls } from './Modal'
 import { ScreenCard } from './ScreenCard'
 
 export function LoginScreen({ onSuccess, onBack }: { onSuccess: () => void; onBack?: () => void }) {
@@ -20,57 +21,50 @@ export function LoginScreen({ onSuccess, onBack }: { onSuccess: () => void; onBa
       onSuccess()
     } else {
       sfx.error()
-      setError('Sai mật khẩu rồi!')
+      setError('Mật khẩu không đúng')
       setPw('')
-      animate(scope.current, { x: [0, -14, 14, -10, 10, -4, 0] }, { duration: 0.45 })
+      animate(scope.current, { x: [0, -8, 8, -5, 5, 0] }, { duration: 0.35 })
     }
   }
 
   return (
     <>
-    <ScreenCard>
-      <form ref={scope} onSubmit={submit} className="space-y-4">
-        <label className="block text-sm font-semibold text-amber-100">🔒 Nhập mật khẩu bí mật</label>
-        <div className="relative">
-          <input
-            autoFocus
-            type={show ? 'text' : 'password'}
-            value={pw}
-            onChange={(e) => {
-              setPw(e.target.value)
-              setError('')
-            }}
-            placeholder="••••••••"
-            className="w-full rounded-xl border-2 border-amber-400/40 bg-black/30 px-4 py-3 pr-12 text-lg text-amber-50 outline-none placeholder:text-amber-200/30 focus:border-amber-300"
-          />
-          <button
-            type="button"
-            onClick={() => setShow((s) => !s)}
-            className="absolute top-1/2 right-3 -translate-y-1/2 text-xl opacity-70 hover:opacity-100"
-            aria-label={show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-          >
-            {show ? '🙈' : '👁️'}
-          </button>
-        </div>
-        <p className="h-5 text-sm font-semibold text-red-300">{error}</p>
-        <Button type="submit" className="w-full py-3 text-lg" disabled={!pw}>
-          Tiếp tục nạp điểm
-        </Button>
-        {onBack && (
-          <Button type="button" variant="ghost" className="w-full" onClick={onBack}>
-            ← Quay lại
+      <ScreenCard title="Xác thực quản trị" subtitle="Nạp điểm" onBack={onBack}>
+        <form ref={scope} onSubmit={submit} className="space-y-3">
+          <label className="label block">Mật khẩu</label>
+          <div className="relative">
+            <input
+              autoFocus
+              type={show ? 'text' : 'password'}
+              value={pw}
+              onChange={(e) => {
+                setPw(e.target.value)
+                setError('')
+              }}
+              placeholder="Nhập mật khẩu"
+              className={`${inputCls} pr-16 ${error ? 'border-down' : ''}`}
+            />
+            <button
+              type="button"
+              onClick={() => setShow((s) => !s)}
+              className="absolute top-1/2 right-2 -translate-y-1/2 rounded-sm px-2 py-1 text-xs text-mute hover:text-ink"
+              aria-label={show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            >
+              {show ? 'Ẩn' : 'Hiện'}
+            </button>
+          </div>
+          <p className="h-4 text-xs text-down">{error}</p>
+          <Button type="submit" className="h-11 w-full" disabled={!pw}>
+            Tiếp tục
           </Button>
-        )}
-        <button
-          type="button"
-          onClick={() => setChanging(true)}
-          className="mx-auto block text-sm text-amber-200/70 underline-offset-4 hover:text-amber-100 hover:underline"
-        >
-          🔑 Đổi mật khẩu
-        </button>
-      </form>
-    </ScreenCard>
-    <AnimatePresence>{changing && <ChangePasswordDialog onClose={() => setChanging(false)} />}</AnimatePresence>
+          <div className="flex items-center justify-end pt-1 text-xs">
+            <button type="button" onClick={() => setChanging(true)} className="text-mute hover:text-ink">
+              Đổi mật khẩu
+            </button>
+          </div>
+        </form>
+      </ScreenCard>
+      <AnimatePresence>{changing && <ChangePasswordDialog onClose={() => setChanging(false)} />}</AnimatePresence>
     </>
   )
 }

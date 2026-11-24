@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { motion } from 'motion/react'
 import { CHIPS } from '../../config'
 import { fmt } from '../../format'
 import { type BcRecord, type Card, type HandScore, compareHands, newDeck, scoreHand } from '../../game/baicao'
 import { sfx } from '../../game/sound'
 import { Button } from '../Button'
 import { Chip } from '../Chip'
+import { inputCls } from '../Modal'
 import { CardSlot, PlayingCard } from '../PlayingCard'
 import { StatusBanner } from '../StatusBanner'
 import { type GameProps, useMainKey, useReportActive } from './shared'
@@ -20,9 +21,9 @@ interface BcResult {
 }
 
 const STATUS: Record<BcPhase, string> = {
-  betting: 'Nhập tiền cược rồi bấm “Chia bài”',
-  player: 'Chạm vào từng lá để nặn bài, xong bấm “Lật bài nhà cái”',
-  revealing: 'Nhà cái đang lật bài...',
+  betting: '',
+  player: '',
+  revealing: '',
   revealed: '',
 }
 
@@ -31,11 +32,11 @@ const REVEAL_MS = 1700
 function ScoreBadge({ score, delay = 0, win }: { score: HandScore; delay?: number; win?: boolean }) {
   return (
     <motion.span
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      transition={{ type: 'spring', delay }}
-      className={`rounded-full px-3 py-0.5 text-sm font-extrabold shadow ${
-        score.tier > 1 ? 'bg-gradient-to-b from-yellow-200 to-amber-500 text-red-900' : win ? 'bg-yellow-300 text-red-900' : 'bg-black/50 text-amber-100'
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay, duration: 0.2 }}
+      className={`rounded-xs border px-2 py-0.5 text-xs font-semibold ${
+        win ? 'border-gold bg-gold text-white' : score.tier > 1 ? 'border-gold/60 text-gold' : 'border-white/20 bg-black/30 text-white'
       }`}
     >
       {score.label}
@@ -43,7 +44,7 @@ function ScoreBadge({ score, delay = 0, win }: { score: HandScore; delay?: numbe
   )
 }
 
-export function BaiCao({ balance, setBalance, history, pushHistory, onActiveChange, onNoMoney }: GameProps<BcRecord>) {
+export function BaiCao({ balance, setBalance, history, pushHistory, hold, onActiveChange, onNoMoney }: GameProps<BcRecord>) {
   const [phase, setPhase] = useState<BcPhase>('betting')
   const [bet, setBet] = useState(() => Math.min(100, balance))
   const [lockedBet, setLockedBet] = useState(0)
@@ -54,6 +55,8 @@ export function BaiCao({ balance, setBalance, history, pushHistory, onActiveChan
   const [roundId, setRoundId] = useState(0)
   const pending = useRef<{ payout: number; record: BcRecord } | null>(null)
   const timer = useRef<number | undefined>(undefined)
+  /** bài nhà cái + kết quả được chốt ngay lúc chia (để tải lại trang giữa ván không "né" được ván thua) */
+  const round = useRef<{ dealer: Card[]; ps: HandScore; ds: HandScore; outcome: ReturnType<typeof compareHands>; net: number } | null>(null)
 
   useReportActive(phase === 'player' || phase === 'revealing', onActiveChange)
 
@@ -62,6 +65,7 @@ export function BaiCao({ balance, setBalance, history, pushHistory, onActiveChan
     const p = pending.current
     if (!p) return
     pending.current = null
+    hold(null)
     setBalance((b) => b + p.payout)
     pushHistory(p.record)
   }
@@ -78,9 +82,23 @@ export function BaiCao({ balance, setBalance, history, pushHistory, onActiveChan
   const deal = () => {
     if (phase !== 'betting') return
     if (bet <= 0 || bet > balance) return onNoMoney()
+    const deck = newDeck()
+    const p = deck.slice(0, 3)
+    const d = deck.slice(3, 6)
+    const ps = scoreHand(p)
+    const ds = scoreHand(d)
+    const outcome = compareHands(ps, ds)
+    const payout = outcome === 1 ? bet * 2 : outcome === 0 ? bet : 0
+    const net = payout - bet
+    round.current = { dealer: d, ps, ds, outcome, net }
+    pending.current = {
+      payout,
+      record: { player: ps.label, dealer: ds.label, outcome: outcome === 1 ? 'win' : outcome === 0 ? 'tie' : 'lose', bet, net, at: Date.now() },
+    }
     setBalance((b) => b - bet)
+    hold({ refund: payout, record: pending.current.record })
     setLockedBet(bet)
-    setPlayer(newDeck().slice(0, 3))
+    setPlayer(p)
     setFlipped([false, false, false])
     setDealer(null)
     setResult(null)
@@ -97,27 +115,16 @@ export function BaiCao({ balance, setBalance, history, pushHistory, onActiveChan
 
   const allFlipped = flipped.every(Boolean)
 
-  /** Lật bài nhà cái — bài nhà cái được rút lúc này (từ bộ bài mới, bỏ 3 lá của người chơi) */
+  /** Lật bài nhà cái (đã chia sẵn lúc bắt đầu ván) */
   const revealDealer = () => {
-    if (phase !== 'player' || !player) return
-    const used = new Set(player.map((c) => `${c.rank}-${c.suit}`))
-    const d = newDeck()
-      .filter((c) => !used.has(`${c.rank}-${c.suit}`))
-      .slice(0, 3)
-    const ps = scoreHand(player)
-    const ds = scoreHand(d)
-    const outcome = compareHands(ps, ds)
-    const payout = outcome === 1 ? lockedBet * 2 : outcome === 0 ? lockedBet : 0
-    const net = payout - lockedBet
+    const r = round.current
+    if (phase !== 'player' || !player || !r) return
+    const { dealer: d, ps, ds, outcome, net } = r
 
     if (!allFlipped) sfx.flip()
     setFlipped([true, true, true])
     setDealer(d)
     setPhase('revealing')
-    pending.current = {
-      payout,
-      record: { player: ps.label, dealer: ds.label, outcome: outcome === 1 ? 'win' : outcome === 0 ? 'tie' : 'lose', bet: lockedBet, net, at: Date.now() },
-    }
     timer.current = window.setTimeout(() => {
       finalize()
       setResult({ player: ps, dealer: ds, outcome, net })
@@ -150,14 +157,12 @@ export function BaiCao({ balance, setBalance, history, pushHistory, onActiveChan
   const done = phase === 'revealed' && result
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+    <div className="mx-auto grid w-full items-start gap-2 lg:grid-cols-[1fr_20rem]">
       {/* Bàn nỉ */}
-      <section className="felt relative flex flex-col items-center gap-3 overflow-hidden rounded-[2.5rem] border-[6px] border-amber-700 px-3 py-5 shadow-2xl sm:px-6">
-        <div className="pointer-events-none absolute inset-3 rounded-[2rem] border-2 border-amber-300/20" />
-
+      <section className="felt relative flex flex-col items-center gap-2 overflow-hidden rounded-md border border-line p-3 sm:py-4">
         {/* Nhà cái */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold tracking-wider text-amber-100/80 uppercase">🏦 Nhà cái</span>
+        <div className="flex h-6 items-center gap-2">
+          <span className="label !text-white/60">Nhà cái</span>
           {dealerScore && <ScoreBadge score={dealerScore} delay={1.2} win={done ? result.outcome === -1 : false} />}
         </div>
         <div className="flex gap-2 sm:gap-3">
@@ -175,7 +180,7 @@ export function BaiCao({ balance, setBalance, history, pushHistory, onActiveChan
             : [0, 1, 2].map((i) => <CardSlot key={i} />)}
         </div>
 
-        <div className="w-full">
+        <div className="w-full max-w-md py-1">
           <StatusBanner
             result={done ? { net: result.net, label: `${result.player.label} vs ${result.dealer.label}` } : null}
             text={STATUS[phase]}
@@ -198,119 +203,112 @@ export function BaiCao({ balance, setBalance, history, pushHistory, onActiveChan
               ))
             : [0, 1, 2].map((i) => <CardSlot key={i} />)}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold tracking-wider text-amber-100/80 uppercase">🙋 Bạn</span>
+        <div className="flex h-6 items-center gap-2">
+          <span className="label !text-white/60">Bạn</span>
           {playerScore && <ScoreBadge score={playerScore} win={done ? result.outcome === 1 : false} />}
-          {phase !== 'betting' && <span className="text-sm text-amber-200/80">· cược {fmt(lockedBet)}</span>}
+          {phase !== 'betting' && <span className="text-xs text-white/60 tabular-nums">Cược {fmt(lockedBet)}</span>}
         </div>
       </section>
 
-      {/* Điều khiển */}
-      <section className="flex flex-col gap-3 rounded-3xl border border-amber-400/20 bg-black/25 p-4">
-        {phase === 'betting' && (
-          <>
-            <div className="flex items-center gap-3">
-              <label className="shrink-0 text-sm text-amber-100/80">Tiền cược</label>
-              <input
-                inputMode="numeric"
-                value={bet ? fmt(bet) : ''}
-                onChange={(e) => setBet(Number(e.target.value.replace(/\D/g, '')) || 0)}
-                placeholder="0"
-                className={`w-full rounded-xl border-2 bg-black/30 px-4 py-2 text-right text-2xl font-extrabold text-amber-50 outline-none ${
-                  bet > balance ? 'border-red-400' : 'border-amber-400/40 focus:border-amber-300'
-                }`}
-              />
-            </div>
-            <div className="flex flex-wrap justify-center gap-2 pt-2">
-              {CHIPS.map((c) => (
-                <Chip
-                  key={c}
-                  value={c}
-                  selected={false}
-                  disabled={bet + c > balance}
-                  onClick={() => {
-                    setBet((b) => b + c)
-                    sfx.chip()
-                  }}
-                />
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" className="flex-1 text-sm" onClick={() => setBet(0)}>
-                Xoá về 0
-              </Button>
-              <Button variant="ghost" className="flex-1 text-sm" onClick={() => setBet(balance)}>
-                🔥 Tất tay
-              </Button>
-            </div>
-            <Button className="py-3 text-xl" disabled={bet <= 0 || bet > balance} onClick={deal}>
-              🃏 Chia bài {bet > 0 ? `(${fmt(bet)})` : ''}
-            </Button>
-            {bet > balance && <p className="text-center text-sm text-red-300">Không đủ điểm!</p>}
-          </>
-        )}
-        {phase === 'player' && (
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              className="flex-1 py-3"
-              disabled={allFlipped}
-              onClick={() => {
-                setFlipped([true, true, true])
-                sfx.flip()
-              }}
-            >
-              Lật hết bài tôi
-            </Button>
-            <Button variant="red" className="flex-[2] py-3 text-lg" onClick={revealDealer}>
-              🏦 Lật bài nhà cái
-            </Button>
+      <div className="flex flex-col gap-2">
+        {/* Điều khiển */}
+        <section className="flex flex-col rounded-md border border-line bg-panel">
+          <div className="flex items-center justify-between border-b border-line px-3 py-2">
+            <span className="label">{phase === 'betting' ? 'Đặt cược' : 'Ván đang chơi'}</span>
           </div>
-        )}
-        {phase === 'revealing' && (
-          <Button className="py-3 text-xl" disabled>
-            Đang lật...
-          </Button>
-        )}
-        {phase === 'revealed' && (
-          <Button className="py-3 text-xl" onClick={newRound}>
-            🔁 Ván mới
-          </Button>
-        )}
-        <p className="text-center text-xs text-amber-100/50">Sáp &gt; Ba Tây &gt; 9 nút … 1 nút &gt; Bù · Thắng 1 ăn 1 · Bằng nhau hoà</p>
-      </section>
-
-      {/* Lịch sử */}
-      <section className="rounded-2xl bg-black/25 p-3">
-        <div className="mb-2 text-xs font-semibold tracking-wider text-amber-200/70 uppercase">Lịch sử ({history.length} ván gần nhất)</div>
-        {history.length === 0 ? (
-          <p className="text-sm text-amber-100/40">Chưa có ván nào.</p>
-        ) : (
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <AnimatePresence initial={false}>
-              {history.map((h) => (
-                <motion.div
-                  key={h.at}
-                  layout
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className={`flex shrink-0 flex-col items-center rounded-xl border-2 px-3 py-1 text-xs ${
-                    h.outcome === 'win' ? 'border-yellow-400/80 bg-yellow-400/10' : h.outcome === 'lose' ? 'border-zinc-500/50 bg-zinc-900/40' : 'border-sky-400/50'
-                  }`}
+          <div className="flex flex-col gap-2 p-3">
+            {phase === 'betting' && (
+              <>
+                <label className="label">Số tiền</label>
+                <input
+                  inputMode="numeric"
+                  value={bet ? fmt(bet) : ''}
+                  onChange={(e) => setBet(Number(e.target.value.replace(/\D/g, '')) || 0)}
+                  placeholder="0"
+                  className={`${inputCls} h-12 text-left text-2xl font-semibold tabular-nums ${bet > balance ? 'border-down focus:border-down' : ''}`}
+                />
+                <p className="h-4 text-xs text-down">{bet > balance ? 'Vượt quá số dư' : ''}</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {CHIPS.map((c) => (
+                    <Chip
+                      key={c}
+                      value={c}
+                      disabled={bet + c > balance}
+                      onClick={() => {
+                        setBet((b) => b + c)
+                        sfx.chip()
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <Button variant="ghost" className="h-8 text-xs" onClick={() => setBet(0)}>
+                    Xoá
+                  </Button>
+                  <Button variant="ghost" className="h-8 text-xs" onClick={() => setBet(balance)}>
+                    Tối đa
+                  </Button>
+                </div>
+                <Button className="mt-2 h-11" disabled={bet <= 0 || bet > balance} onClick={deal}>
+                  Chia bài {bet > 0 ? `· ${fmt(bet)}` : ''}
+                </Button>
+              </>
+            )}
+            {phase === 'player' && (
+              <>
+                <Button
+                  variant="ghost"
+                  className="h-10"
+                  disabled={allFlipped}
+                  onClick={() => {
+                    setFlipped([true, true, true])
+                    sfx.flip()
+                  }}
                 >
-                  <span className="font-semibold whitespace-nowrap text-amber-100">
-                    {h.player} <span className="opacity-50">vs</span> {h.dealer}
+                  Lật hết bài của tôi
+                </Button>
+                <Button className="h-11" onClick={revealDealer}>
+                  Mở bài nhà cái
+                </Button>
+              </>
+            )}
+            {phase === 'revealing' && (
+              <Button className="h-11" disabled>
+                Đang mở bài...
+              </Button>
+            )}
+            {phase === 'revealed' && (
+              <Button className="h-11" onClick={newRound}>
+                Ván mới
+              </Button>
+            )}
+          </div>
+        </section>
+
+        {/* Lịch sử */}
+        <section className="rounded-md border border-line bg-panel">
+          <div className="flex items-center justify-between border-b border-line px-3 py-2">
+            <span className="label">Lịch sử</span>
+          </div>
+          {history.length === 0 ? (
+            <p className="px-3 py-3 text-sm text-dim">Chưa có ván nào.</p>
+          ) : (
+            <div className="max-h-72 divide-y divide-line overflow-y-auto">
+              {history.map((h) => (
+                <div key={h.at} className="flex items-center justify-between gap-3 px-3 py-1.5 text-xs">
+                  <span className="min-w-0 truncate text-mute">
+                    {h.player} <span className="text-dim">vs</span> {h.dealer}
                   </span>
-                  <span className={`font-bold ${h.net > 0 ? 'text-yellow-300' : h.net < 0 ? 'text-zinc-400' : 'text-sky-300'}`}>
+                  <span className={`shrink-0 text-sm font-semibold tabular-nums ${h.net > 0 ? 'text-up' : h.net < 0 ? 'text-down' : 'text-mute'}`}>
                     {h.net > 0 ? '+' : ''}
                     {fmt(h.net)}
                   </span>
-                </motion.div>
+                </div>
               ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </section>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   )
 }

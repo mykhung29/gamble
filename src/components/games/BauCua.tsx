@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence } from 'motion/react'
 import { SHAKE_MS } from '../../config'
 import { fmt } from '../../format'
 import { type Bets, type Dice, type RoundRecord, type SettleResult, type SymbolId, emptyBets, rollDice, settle, sumBets } from '../../game/logic'
@@ -7,20 +7,20 @@ import { sfx } from '../../game/sound'
 import { SYMBOLS, SYMBOL_MAP, SymbolIcon } from '../../game/symbols'
 import { BetDialog } from '../BetDialog'
 import { BetTile } from '../BetTile'
-import { Bowl, DieShell, type Phase } from '../Bowl'
+import { Bowl, type Phase } from '../Bowl'
 import { Button } from '../Button'
 import { RoundTimer } from '../RoundTimer'
 import { StatusBanner } from '../StatusBanner'
 import { type GameProps, useAutoRounds, useReportActive } from './shared'
 
 const STATUS: Record<Phase, string> = {
-  idle: 'Chuẩn bị lắc...',
-  shaking: 'Đang lắc...',
-  betting: 'Bấm vào con vật để đặt cược — hết giờ sẽ tự khui',
+  idle: '',
+  shaking: '',
+  betting: '',
   revealed: '',
 }
 
-export function BauCua({ balance, setBalance, history, pushHistory, onActiveChange, onNoMoney }: GameProps<RoundRecord>) {
+export function BauCua({ balance, setBalance, history, pushHistory, hold, onActiveChange, onNoMoney }: GameProps<RoundRecord>) {
   const [bets, setBets] = useState<Bets>(emptyBets)
   const [phase, setPhase] = useState<Phase>('idle')
   const [dice, setDice] = useState<Dice | null>(null)
@@ -62,6 +62,7 @@ export function BauCua({ balance, setBalance, history, pushHistory, onActiveChan
     const delta = amount - bets[editing]
     if (delta > balance) return onNoMoney()
     setBalance((b) => b - delta)
+    hold(totalBet + delta > 0 ? { refund: totalBet + delta } : null)
     setBets({ ...bets, [editing]: amount })
     setEditing(null)
     if (amount > 0) sfx.chip()
@@ -71,6 +72,7 @@ export function BauCua({ balance, setBalance, history, pushHistory, onActiveChan
   const clearBets = () => {
     if (!betting || !totalBet) return
     setBalance((b) => b + totalBet)
+    hold(null)
     setBets(emptyBets())
     sfx.remove()
   }
@@ -86,6 +88,7 @@ export function BauCua({ balance, setBalance, history, pushHistory, onActiveChan
     setResult(r)
     setPhase('revealed')
     if (r.payout) setBalance((b) => b + r.payout)
+    hold(null)
     pushHistory({ dice: d, bet: r.totalBet, net: r.net, at: Date.now() })
     sfx.open()
     window.setTimeout(() => (r.net > 0 ? sfx.win(r.net >= r.totalBet * 2) : r.net < 0 ? sfx.lose() : undefined), 500)
@@ -99,33 +102,35 @@ export function BauCua({ balance, setBalance, history, pushHistory, onActiveChan
   const shown: Dice = dice ?? ['nai', 'nai', 'nai']
 
   return (
-    <div className="flex flex-col gap-2 sm:gap-4">
-      <div className="grid items-start gap-2 sm:gap-4 lg:gap-6 lg:grid-cols-[minmax(0,22rem)_1fr]">
-        <section className="flex flex-col items-center gap-2 rounded-2xl border border-amber-400/20 bg-black/20 p-2 sm:gap-4 sm:rounded-3xl sm:p-5">
-          <div className="pt-5 pb-2 sm:pt-6 sm:pb-3">
+    <div className="flex flex-col gap-2">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-2 lg:grid-cols-[30rem_1fr]">
+        {/* Bát */}
+        <section className="flex flex-col items-center gap-2 rounded-md border border-line bg-panel p-3">
+          <RoundTimer phase={phase} left={left} />
+          <div className="w-full py-1">
             <Bowl
               phase={phase}
-              overlay={<RoundTimer phase={phase} left={left} />}
-              hint={betting ? 'Đã lắc xong — mời đặt cược' : undefined}
-              dice={[0, 1, 2].map((i) => (
-                <DieShell key={`${roundId}-${i}`} index={i} revealed border={SYMBOL_MAP[shown[i]].ring}>
-                  <img src={SYMBOL_MAP[shown[i]].img} alt={SYMBOL_MAP[shown[i]].name} draggable={false} className="size-full object-cover" />
-                </DieShell>
-              )) as [React.ReactNode, React.ReactNode, React.ReactNode]}
+              roundKey={roundId}
+              faces={shown.map((d) => <img key={d} src={SYMBOL_MAP[d].img} alt={SYMBOL_MAP[d].name} draggable={false} className="size-full object-cover" />) as [React.ReactNode, React.ReactNode, React.ReactNode]}
+              borders={shown.map((d) => SYMBOL_MAP[d].ring) as [string, string, string]}
             />
           </div>
           <StatusBanner
-            result={phase === 'revealed' && result ? (result.totalBet ? result : { net: 0, noBet: true, label: dice?.map((d) => SYMBOL_MAP[d].name).join(' · ') }) : null}
+            result={
+              phase === 'revealed' && result
+                ? { net: result.net, noBet: !result.totalBet, label: dice?.map((d) => SYMBOL_MAP[d].name).join(' · ') }
+                : null
+            }
             text={STATUS[phase]}
           />
         </section>
 
-        <section className="flex flex-col gap-2 sm:gap-4">
-          <div
-            className={`pattern grid grid-cols-3 gap-1.5 rounded-2xl border-2 bg-red-900/60 p-1.5 shadow-2xl transition-colors sm:gap-4 sm:rounded-3xl sm:border-4 sm:p-4 ${
-              betting ? 'border-yellow-300 shadow-[0_0_40px_rgba(250,204,21,.35)]' : 'border-amber-500/60'
-            }`}
-          >
+        {/* Bàn cược */}
+        <section className="flex flex-col rounded-md border border-line bg-panel">
+          <div className="flex items-center justify-between border-b border-line px-3 py-2">
+            <span className="label shrink-0">Bàn cược</span>
+          </div>
+          <div className={`grid grid-cols-3 gap-1.5 p-2 transition-opacity ${betting ? '' : 'opacity-90'}`}>
             {SYMBOLS.map((s) => (
               <BetTile
                 key={s.id}
@@ -140,53 +145,44 @@ export function BauCua({ balance, setBalance, history, pushHistory, onActiveChan
               />
             ))}
           </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-black/25 px-2 py-2 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
-            <div className="text-sm">
-              Tổng cược: <span className="text-lg font-extrabold text-amber-300">{fmt(totalBet)}</span>
+          <div className="flex items-center justify-between gap-3 border-t border-line px-3 py-2">
+            <div className="flex items-baseline gap-2">
+              <span className="label">Tổng cược</span>
+              <span className="text-base font-semibold text-gold tabular-nums">{fmt(totalBet)}</span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="ghost" className="text-sm" disabled={!betting || !totalBet} onClick={clearBets}>
-                ✖ Xoá cược
-              </Button>
-            </div>
+            <Button variant="ghost" className="h-8 px-3 text-xs" disabled={!betting || !totalBet} onClick={clearBets}>
+              Huỷ tất cả cược
+            </Button>
           </div>
-          <p className="text-center text-xs text-amber-100/50">Bấm vào con vật đã cược để sửa số tiền hoặc bỏ cược</p>
         </section>
       </div>
 
-      <section className="rounded-xl bg-black/25 p-2 sm:rounded-2xl sm:p-3">
-        <div className="mb-2 text-xs font-semibold tracking-wider text-amber-200/70 uppercase">Lịch sử ({history.length} ván gần nhất)</div>
+      {/* Lịch sử */}
+      <section className="rounded-md border border-line bg-panel">
+        <div className="flex items-center justify-between border-b border-line px-3 py-2">
+          <span className="label">Lịch sử</span>
+        </div>
         {history.length === 0 ? (
-          <p className="text-sm text-amber-100/40">Chưa có ván nào.</p>
+          <p className="px-3 py-3 text-sm text-dim">Chưa có ván nào.</p>
         ) : (
-          <div className="flex flex-col gap-1">
-            <AnimatePresence initial={false}>
-              {history.map((h) => (
-                <motion.div
-                  key={h.at}
-                  layout
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex items-center gap-2 rounded-lg border px-2 py-1 ${
-                    !h.bet ? 'border-white/10' : h.net > 0 ? 'border-yellow-400/70 bg-yellow-400/10' : h.net < 0 ? 'border-zinc-500/40 bg-zinc-900/40' : 'border-sky-400/50'
-                  }`}
-                >
-                  <span className="w-10 shrink-0 text-xs tabular-nums text-amber-100/50">
-                    {new Date(h.at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <div className="flex shrink-0 gap-1">
-                    {h.dice.map((d, i) => (
-                      <SymbolIcon key={i} id={d} size={28} />
-                    ))}
-                  </div>
-                  <span className="min-w-0 flex-1 truncate text-xs text-amber-100/70">{h.dice.map((d) => SYMBOL_MAP[d].name).join(' · ')}</span>
-                  <span className={`shrink-0 text-sm font-bold tabular-nums ${!h.bet ? 'text-amber-100/40' : h.net > 0 ? 'text-yellow-300' : h.net < 0 ? 'text-zinc-400' : 'text-sky-300'}`}>
-                    {!h.bet ? 'không cược' : `${h.net > 0 ? '+' : ''}${fmt(h.net)}`}
-                  </span>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+          <div className="max-h-72 divide-y divide-line overflow-y-auto">
+            {history.map((h) => (
+              <div key={h.at} className="flex items-center gap-3 px-3 py-1.5">
+                <span className="w-11 shrink-0 text-xs text-dim tabular-nums">
+                  {new Date(h.at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                <div className="flex shrink-0 gap-1">
+                  {h.dice.map((d, i) => (
+                    <SymbolIcon key={i} id={d} size={24} className="!rounded-xs" />
+                  ))}
+                </div>
+                <span className="min-w-0 flex-1 truncate text-xs text-mute">{h.dice.map((d) => SYMBOL_MAP[d].name).join(' · ')}</span>
+                <span className="w-16 shrink-0 text-right text-xs text-dim tabular-nums">{h.bet ? fmt(h.bet) : ''}</span>
+                <span className={`w-20 shrink-0 text-right text-sm font-semibold tabular-nums ${!h.bet ? 'text-dim' : h.net > 0 ? 'text-up' : h.net < 0 ? 'text-down' : 'text-mute'}`}>
+                  {!h.bet ? '—' : `${h.net > 0 ? '+' : ''}${fmt(h.net)}`}
+                </span>
+              </div>
+            ))}
           </div>
         )}
       </section>
@@ -196,8 +192,7 @@ export function BauCua({ balance, setBalance, history, pushHistory, onActiveChan
           <BetDialog
             key={editing}
             title={SYMBOL_MAP[editing].name}
-            icon={<SymbolIcon id={editing} size={52} />}
-            headerClass={SYMBOL_MAP[editing].tile}
+            icon={<SymbolIcon id={editing} size={32} className="!rounded-xs" />}
             current={bets[editing]}
             available={balance + bets[editing]}
             onConfirm={confirmBet}
